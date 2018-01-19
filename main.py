@@ -1,0 +1,7 @@
+'''Main module of hat.'''
+
+
+
+
+
+

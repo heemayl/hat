@@ -1,0 +1,6 @@
+*[~#]
+draft.txt
+logs/*
+*private*
+*/__pycache__/*
+*.pyc
