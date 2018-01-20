@@ -1,7 +1,2 @@
 '''Main module of hat.'''
 
-
-
-
-
-

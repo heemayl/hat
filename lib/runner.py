@@ -8,6 +8,7 @@ import subprocess
 import time
 
 from .scheduler import get_enqueued_jobs, remove_job
+from .utils import FLock
 
 
 class HatRunnerException(Exception):
@@ -28,9 +29,10 @@ class BaseRunnerMeta(type):
 class BaseRunner(metaclass=BaseRunnerMeta):
     '''The base command runner. This is a singleton.'''
     def __init__(self):
-        self.stdout = '/home/chayan/stuffs/hat/logs/hat/stdout.log'
-        self.stderr = '/home/chayan/stuffs/hat/logs/hat/stderr.log'
-
+        self.stdout_file = '/home/chayan/stuffs/hat/logs/hat/stdout.log'
+        self.stderr_file = '/home/chayan/stuffs/hat/logs/hat/stderr.log'
+        self._running = False
+        
     @property
     def jobcount(self):
         '''Returns number of runnable jobs in the queue.'''
@@ -47,7 +49,6 @@ class BaseRunner(metaclass=BaseRunnerMeta):
     def start(self):
         '''Starting BaseRunner instance.'''
         self._running = True
-        self.pool = multiprocessing.Pool()
         self._runner()
 
     def stop(self):
@@ -64,33 +65,63 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                 to_remove = []
                 for hash_, job in _jobs.items():
                     if job['job_run_at'] <= int(time.time()):
-                        self.pool.apply_async(
-                            self.run_command,
+                        multiprocessing.Process(
+                            target=self.command_run_save,
                             args=(job['command'],),
-                            kwds={
-                                'stdout': self.stdout,
-                                'stderr': self.stderr,
-                            }
-                        )
+                            kwargs={
+                                'stdout_file': self.stdout_file,
+                                'stderr_file': self.stderr_file,
+                            },
+                        ).start()
                         to_remove.append(hash_)
                 for hash_ in to_remove:
                     remove_job(hash_)
             time.sleep(0.1)
-            
-    @staticmethod    
-    def run_command(command, stdout, stderr):
-        for f in (stdout, stderr):
+
+    def command_run_save(self, command, stdout_file, stderr_file):
+        '''Runs a command using `run_command`, gets the
+        (returncode, STDOUT, STDERR) tuple and saves them
+        using `_check_and_write`.
+        '''
+        for f in (stdout_file, stderr_file):
             if f:
                 os.makedirs(os.path.dirname(f), exist_ok=True)
-                
-        with open(stdout, 'at') as f_out, open(stderr, 'at') as f_err:
-            try:
-                process = subprocess.Popen(shlex.split(command),
-                                           stdout=f_out,
-                                           stderr=f_err,
-                                           shell=False)
-            except FileNotFoundError as err:
-                f_err.write(str(err))
-            else:
-                return process
+
+        returncode, stdout, stderr = self.run_command(command)
+        self._check_and_write(stdout_file, returncode, stdout)
+        self._check_and_write(stderr_file, returncode, stderr)
+
+    def run_command(self, command):
+        '''Runs a command, and returns (exit_status, STDOUT, STDERR) tuple.'''
+        try:
+            proc = subprocess.Popen(shlex.split(command),
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    shell=False)
+        except Exception as err:
+            # Setting `returncode` to 127
+            returncode, stdout, stderr = 127, b'', bytes(str(err), 'utf-8')
+        else:
+            # returncode = proc.wait()
+            returncode, stdout, stderr = proc.wait(), *proc.communicate()
+        finally:
+            return (returncode, stdout, stderr)
+
+    def _check_and_write(self, filename, returncode, content):
+        '''Checks the input content, converts and saves in
+        filename by calling `write_to_file` afterwards.
+        '''
+        if content:
+            content = '{} : {}'.format(returncode, content.decode('utf-8'))
+            self.write_to_file(filename, content)
+            
+    @staticmethod
+    def write_to_file(filename, content, mode='at'):
+        '''Writes `content` to `filename`.'''
+        with FLock():
+            with open(filename, mode) as f:
+                f.write('{} : {}\n'.format(
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    content)
+                )
 

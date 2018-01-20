@@ -17,7 +17,7 @@ class FLock:
             try:
                 fcntl.lockf(self.lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
-                time.sleep(0.2)
+                time.sleep(0.5)
                 continue
             return self.lockf
         
