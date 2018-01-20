@@ -8,3 +8,7 @@ Benefits of `hat`:
 - Extended features
 - Easy to use
 
+---
+
+### This project is a "work in progress". Installation guide will be added once the base project is ready and tested.
+
