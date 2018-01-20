@@ -4,3 +4,4 @@ logs/*
 *private*
 */__pycache__/*
 *.pyc
+*/.lockfile*
