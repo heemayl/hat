@@ -125,3 +125,7 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                     content)
                 )
 
+                
+if __name__ == '__main__':
+    pass
+

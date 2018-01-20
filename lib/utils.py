@@ -24,3 +24,7 @@ class FLock:
     def __exit__(self, *exc_info):
         fcntl.lockf(self.lockf, fcntl.LOCK_UN)
         self.lockf.close()
+
+
+if __name__ == '__main__':
+    pass
