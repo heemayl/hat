@@ -50,9 +50,10 @@ class JobMeta(ABCMeta):
 
 class Job(metaclass=JobMeta):
     '''A job to be done at specified time.'''
-    def __init__(self, command, time_):
+    def __init__(self, command, time_, use_shell=False):
         self.command = command
         self.time_str = time_
+        self.use_shell = use_shell
         # Getting when to run in Epoch 
         self.get_run_at_epoch()
         # Saving the job, hash of current+job time as key in `enqueued_jobs`,
@@ -61,6 +62,7 @@ class Job(metaclass=JobMeta):
         enqueued_jobs[self.hash_] = {
             'command': self.command,
             'job_run_at': int(self.date_time_epoch),  # to int
+            'use_shell': self.use_shell,
         }
 
     def get_run_at_epoch(self):
