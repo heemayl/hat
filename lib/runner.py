@@ -4,6 +4,7 @@ import datetime
 import json
 import multiprocessing
 import os
+import pickle
 import shlex
 import subprocess
 import time
@@ -33,14 +34,13 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         self.stdout_file = '/home/chayan/stuffs/hat/logs/hat/stdout.log'
         self.stderr_file = '/home/chayan/stuffs/hat/logs/hat/stderr.log'
         self.daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
-        self.fifo_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-        self.fifo_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+        self.fifo_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
+        self.fifo_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
+        self.pickle_file = '/home/chayan/stuffs/hat/hatdb.pkl'
         self._running = False
-        self.queue = multiprocessing.Queue()
         
-    @property
-    def _joblist_raw(self):
-        return get_enqueued_jobs()
+    def _joblist_raw(self, euid):
+        return get_enqueued_jobs(euid)
 
     def start(self):
         '''Starting BaseRunner instance.'''
@@ -53,10 +53,21 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         content = json.dumps({'stop': True})
         self.write_to_file(self.fifo_in, content, 'wt', nodate=True)
 
+    def _dump_db(self):
+        '''Dumping `enqueued_jobs` to
+        pickle file (when anything changes),
+        called from _runner.
+        '''
+        with FLock():
+            with open(self.pickle_file, 'wb') as fpkl:
+                pickle.dump(get_enqueued_jobs(-1), fpkl)
+        
     def _runner(self, fifo_in, fifo_out):
         '''The runner.'''
         with open(fifo_in, 'rt') as fifo_in:
             while True:
+                if not self._running:
+                    break
                 to_remove = []
                 for line in fifo_in:
                     try:
@@ -64,51 +75,65 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                     except json.JSONDecodeError as e:
                         self.write_to_file(self.daemon_log, str(e))
                     else:
-                        if len(content) == 3:
+                        if len(content) in {3, 4}:
                             try:
                                 Job(
+                                    int(content['euid']),
                                     content['command'],
                                     content['time_'],
                                     content.get('use_shell', False)
                                 )
                             except KeyError:
                                 pass
+                            else:
+                                self._dump_db()
                         elif len(content) == 1:
+                            # {'joblist': euid}
                             if 'joblist' in content:
                                 self.write_to_file(fifo_out,
                                                    json.dumps(
-                                                       dict(self._joblist_raw)
+                                                       dict(self._joblist_raw(
+                                                        int(content['joblist'])
+                                                       )
+                                                       )
                                                    ),
                                                    mode='wt',
                                                    nodate=True
                                 )
+                            # {'stop': True}
                             elif 'stop' in content:
                                 self._running = False
+                            # {'remove': [(euid, job_id), ...]}
                             elif 'remove' in content:
-                                to_remove.append(int(content['remove']))
-                if not self._running:
-                    break
-                _jobs = self._joblist_raw
+                                for euid, job_id in content['remove']:
+                                    to_remove.append((euid, int(job_id)))
+                _jobs = self._joblist_raw(-1)
                 if _jobs:
-                    for job_id, job in _jobs.items():
-                        if job['job_run_at'] <= int(time.time()):
-                            multiprocessing.Process(
-                                target=self.command_run_save,
-                                args=(job['command'],),
-                                kwargs={
-                                    'stdout_file': self.stdout_file,
-                                    'stderr_file': self.stderr_file,
-                                    'use_shell': job.get('use_shell', False),
-                                    'job_id': job_id
-                                },
-                            ).start()
-                            to_remove.append(job_id)
-                    for job_id in to_remove:
-                        remove_job(job_id)
+                    for euid, job_dict in _jobs.items():
+                        for job_id, job in job_dict.items():
+                            if job['job_run_at'] <= int(time.time()):
+                                multiprocessing.Process(
+                                    target=self.command_run_save,
+                                    args=(job['command'],),
+                                    kwargs={
+                                        'euid': euid,
+                                        'stdout_file': self.stdout_file,
+                                        'stderr_file': self.stderr_file,
+                                        'use_shell': job.get('use_shell',
+                                                             False),
+                                        'job_id': job_id,
+                                        'run_at': job['job_run_at'],
+                                    },
+                                ).start()
+                                to_remove.append((euid, job_id))
+                if to_remove:
+                    for euid, job_id in to_remove:
+                        remove_job(euid, job_id)
+                    self._dump_db()
                 time.sleep(0.1)
 
-    def command_run_save(self, command, stdout_file, stderr_file,
-                         use_shell, job_id):
+    def command_run_save(self, command, euid, stdout_file, stderr_file,
+                         use_shell, job_id, run_at):
         '''Runs a command using `run_command`, gets the
         (returncode, STDOUT, STDERR) tuple and saves them
         using `_check_and_write`.
@@ -119,8 +144,10 @@ class BaseRunner(metaclass=BaseRunnerMeta):
 
         returncode, stdout, stderr = self.run_command(command, use_shell,
                                                       job_id)
-        self._check_and_write(stdout_file, job_id, command, returncode, stdout)
-        self._check_and_write(stderr_file, job_id, command, returncode, stderr)
+        self._check_and_write(stdout_file, euid, run_at, job_id, command,
+                              returncode, stdout)
+        self._check_and_write(stderr_file, euid, run_at, job_id, command,
+                              returncode, stderr)
 
     def run_command(self, command, use_shell, job_id):
         '''Runs a command, and returns (exit_status, STDOUT, STDERR) tuple.'''
@@ -150,13 +177,18 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                 )
                 # raise HatRunnerException(error_msg)
             
-    def _check_and_write(self, filename, job_id, command, returncode, content):
+    def _check_and_write(self, filename, euid, run_at, job_id, command,
+                         returncode, content):
         '''Checks the input content, converts and saves in
         filename by calling `write_to_file` afterwards.
         '''
         if content:
-            content = 'id>{} : cmd>{} : ret>{} :: out>{}'.format(
-                job_id, command, returncode, content.decode('utf-8'))
+            content = 'euid>{} : id>{} : time>{} : cmd>{} : ret>{} :: out>{}'.format(
+                euid,
+                job_id,
+                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_at)),
+                command, returncode, content.decode('utf-8')
+            )
             self.write_to_file(filename, content)
             
     @staticmethod

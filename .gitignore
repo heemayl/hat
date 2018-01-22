@@ -6,3 +6,4 @@ logs/*
 *.pyc
 */.lockfile*
 test*
+*.pkl

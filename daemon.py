@@ -26,16 +26,14 @@ class HatDaemon(metaclass=HatDaemonMeta):
             # daemon=True,
             name='hatd',
         )
-        self.runner_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-        self.runner_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+        self.runner_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
+        self.runner_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
         
     def start(self):
         '''Starting the daemon.'''
         self.daemon.start()
         time.sleep(1)
-        if self.status():
-            return True
-        return False
+        return self.status()
 
     def stop(self):
         '''Stop should be foreceful, if needed.'''
@@ -48,7 +46,7 @@ class HatDaemon(metaclass=HatDaemonMeta):
                 shell=True
             )
         return True
-            
+    
     def status(self):
         return self.daemon.is_alive()
 
@@ -62,10 +60,11 @@ class HatDaemon(metaclass=HatDaemonMeta):
     def pid(self):
         return self.daemon.pid
 
-    def add_job(self, command, time_, use_shell=False):
+    def add_job(self, euid, command, time_, use_shell=False):
         '''Adds a new job.'''
         # Sending `job` dict to fifo with required params
         job = {
+            'euid': euid,
             'command': command,
             'time_': time_,
             'use_shell': use_shell
@@ -73,33 +72,32 @@ class HatDaemon(metaclass=HatDaemonMeta):
         BaseRunner.write_to_file(self.runner_in, json.dumps(job), 'wt',
                                  nodate=True)
         
-    def remove_job(self, job_id):
+    def remove_job(self, euid, *job_ids):
         '''Remove a job.'''
         # Sending a dict with `remove` as key
-        # and job_id as value
+        # and [(euid, job_id),...] as value
         remove_job = {
-            'remove': job_id
+            'remove': [(euid, id) for id in job_ids]
         }
         BaseRunner.write_to_file(self.runner_in, json.dumps(remove_job),
                                  'wt', nodate=True)
         
-    @property
-    def joblist(self):
-        '''Getting the current joblist as raw dict.'''
+    def joblist(self, euid):
+        '''Getting the current joblist of euid as raw dict.'''
         # Sending one item dict with key `joblist`
         content = {
-            'joblist': True
-        }
+            'joblist': euid
+        }        
         BaseRunner.write_to_file(self.runner_in, json.dumps(content), 'wt',
                                  nodate=True)
+        # Getting jobs: `{id: {}, id: {}, ...}`
         with open(self.runner_out) as runner_out:
             jobs = runner_out.read().strip()
         jobs = json.loads(jobs)
-        return jobs
+        return json.dumps(sorted(jobs.items()), indent=4)  # Prettify-ing
 
-    @property
-    def jobcount(self):
-        jobs = self.joblist
+    def jobcount(self, euid):
+        jobs = json.loads(self.joblist(euid))
         return len(jobs)
     
     
