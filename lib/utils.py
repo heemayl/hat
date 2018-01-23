@@ -24,6 +24,12 @@ class FLock:
     def __exit__(self, *exc_info):
         fcntl.lockf(self.lockf, fcntl.LOCK_UN)
         self.lockf.close()
+        
+
+def print_msg(msg, flush_stream=True):
+    '''Wrapper for formatting-printing.'''
+    print('\n{}\n'.format(msg), end='\n', flush=flush_stream)
+    return
 
 
 if __name__ == '__main__':
