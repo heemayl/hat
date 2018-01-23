@@ -6,12 +6,13 @@ import time
 
 from collections import Mapping
 
-from lib.runner import BaseRunner
+from lib.utils import write_file
 from daemon import HatDaemon
 
 
 DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
 DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
 
 
 class DaemonWrapper:
@@ -36,11 +37,11 @@ class DaemonWrapper:
 
     def _write_daemon_out(self, output):
         '''Writes the output to the daemon_out fifo.'''
-        BaseRunner.write_to_file(
+        write_file(
             DAEMON_OUT,
-            json.dumps(output),
-            mode='wt',
+            output,
             nodate=True,
+            json_dumps=True
         )
     
     def joblist(self, value):
@@ -93,6 +94,7 @@ if __name__ == '__main__':
             action_map[sys.argv[1]]()
     # if daemon is started, starting to `run`
     if daemon.status():
+        write_file(PID_FILE, daemon.pid, nodate=True)
         daemon_wrapper = DaemonWrapper(daemon)
         daemon_wrapper.run()
 

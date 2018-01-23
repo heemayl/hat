@@ -10,14 +10,14 @@ import time
 
 from abc import ABCMeta
 
-from .utils import FLock
+from .utils import write_file
 
 
-pickle_file = '/home/chayan/stuffs/hat/hatdb.pkl'
-daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
+PICKLE_FILE = '/home/chayan/stuffs/hat/hatdb.pkl'
+DAEMON_LOG = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
 
 # Loading previous jobs (if any)
-with open(pickle_file, 'rb') as fpkl:
+with open(PICKLE_FILE, 'rb') as fpkl:
     try:
         saved_data = pickle.load(fpkl)
     except EOFError:
@@ -28,27 +28,18 @@ enqueued_jobs = saved_data or collections.defaultdict(dict)
 
 def _check_perm(euid):
     '''Check if the given EUID is allowed.'''
-    invoking_euid = os.geteuid()
+    daemon_euid = os.geteuid()
     # TODO: Need to change this because `os.getuid()` will
     # always be 0 as root would start the daemon
-    if invoking_euid not in {euid, 0}:
-        invoking_euid = os.geteuid()
-        write_daemon_log("UID {} can't impersonate UID {}"
-                         .format(invoking_euid, euid))
+    if euid not in {daemon_euid, 0}:
+        write_file(
+            DAEMON_LOG,
+            "UID {}: Permission denied".format(euid),
+            mode='at',
+        )
         raise HatJobException(
-            'UID {}: Permission denied while impersonating UID {}'.format(
-                invoking_euid, euid))
-    
+            'UID {}: Permission denied'.format(euid))
 
-def write_daemon_log(content):
-    '''DRY func for writing to the daemon log.'''
-    with FLock():
-        with open(daemon_log, 'at') as f:
-            f.write('{} : {}\n'.format(
-                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                content
-            ))
-    
 
 def get_enqueued_jobs(euid):
     '''To be called from other modules to get enqueued_jobs.'''
@@ -67,13 +58,12 @@ def remove_job(euid, job_id):
     try:
         del jobs[job_id]
     except KeyError:
-        with open(daemon_log, 'a') as f:
-            f.write('{} : {}\n'.format(
-                datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'Removal failed: No such job with ID {} for UID {}'.
-                format(job_id, euid)
-            ))
-
+        write_file(DAEMON_LOG,
+                   'Removal failed: No such job with ID {} for UID {}'
+                   .format(job_id, euid),
+                   mode='at'
+        )
+            
         
 class HatTimerException(Exception):
     '''Generic exception class for all input timers.'''
@@ -112,6 +102,8 @@ class Job(metaclass=JobMeta):
         _check_perm(self.euid)
         # Getting when to run in Epoch 
         self.date_time_epoch = self.get_run_at_epoch()
+        if not self.date_time_epoch:
+            return
         # Saving the job, with the user's EUID as keys, and increasing
         # IDs as subdict keys with command, time, use_shell as values
         self.job_id = self._get_job_id()
@@ -136,6 +128,12 @@ class Job(metaclass=JobMeta):
         for id in range(1, max_id):
             if id not in current_keys:
                 return id
+        write_file(
+            DAEMON_LOG,
+            'Job slot exceeded: Maximum {} jobs can be enqueued'
+            .format(max_id),
+            mode='at'
+        )
         raise HatJobException(
             'Job slot exceeded: Maximum {} jobs can be enqueued'
             .format(max_id))
@@ -152,13 +150,15 @@ class Job(metaclass=JobMeta):
             except ValueError:
                 continue
             else:
-                return time.mktime(self.date_time.timetuple())
+                self.date_time_epoch = time.mktime(self.date_time.timetuple())
+                if self.date_time_epoch < time.time():
+                    raise HatTimerException(
+                        'No backward time travel support: {}'
+                        .format(self.time_str))
+                return self.date_time_epoch
         if not self.date_time:
             raise HatTimerException(('Ambiguous input time: {}'
                                      '. Please see the help page.')
-                                    .format(self.time_str))
-        if self.date_time_epoch <= time.time():
-            raise HatTimerException('No backward time travel support: {}'
                                     .format(self.time_str))
 
     def __repr__(self):

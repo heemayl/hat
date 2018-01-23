@@ -1,9 +1,11 @@
 *[~#]
+.#*
 draft.txt
 logs/*
 *private*
 */__pycache__/*
 *.pyc
-*/.lockfile*
+*.lock*
 test*
 *.pkl
+hatd.pid

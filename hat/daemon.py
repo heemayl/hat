@@ -5,6 +5,7 @@ import multiprocessing
 import subprocess
 import time
 
+from lib.utils import read_file, write_file
 from lib.runner import BaseRunner
 
 
@@ -28,6 +29,9 @@ class HatDaemon(metaclass=HatDaemonMeta):
         )
         self.runner_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
         self.runner_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
+        self.daemon_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
+        self.daemon_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+        self.daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
         
     def start(self):
         '''Starting the daemon.'''
@@ -69,8 +73,12 @@ class HatDaemon(metaclass=HatDaemonMeta):
             'time_': time_,
             'use_shell': use_shell
         }
-        BaseRunner.write_to_file(self.runner_in, json.dumps(job), 'wt',
-                                 nodate=True)
+        write_file(
+            self.runner_in,
+            job,
+            nodate=True,
+            json_dumps=True
+        )
         
     def remove_job(self, euid, *job_ids):
         '''Remove a job.'''
@@ -79,21 +87,37 @@ class HatDaemon(metaclass=HatDaemonMeta):
         remove_job = {
             'remove': [(euid, id) for id in job_ids]
         }
-        BaseRunner.write_to_file(self.runner_in, json.dumps(remove_job),
-                                 'wt', nodate=True)
-        
+        write_file(
+            self.runner_in,
+            remove_job,
+            nodate=True,
+            json_dumps=True
+        )
+        write_file(
+            self.daemon_out,
+            {"msg": "Queued"},
+            nodate=True,
+            json_dumps=True,
+        )
+
     def joblist(self, euid):
         '''Getting the current joblist of euid as raw dict.'''
         # Sending one item dict with key `joblist`
         content = {
             'joblist': euid
-        }        
-        BaseRunner.write_to_file(self.runner_in, json.dumps(content), 'wt',
-                                 nodate=True)
+        }
+        write_file(
+            self.runner_in,
+            content,
+            nodate=True,
+            json_dumps=True
+        )
         # Getting jobs: `{id: {}, id: {}, ...}`
-        with open(self.runner_out) as runner_out:
-            jobs = runner_out.read().strip()
-        jobs = json.loads(jobs)
+        jobs = read_file(
+            self.runner_out,
+            whole=True,
+            json_loads=True
+        )
         return json.dumps(sorted(jobs.items()), indent=4)  # Prettify-ing
 
     def jobcount(self, euid):

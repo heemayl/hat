@@ -4,23 +4,25 @@ import argparse
 import datetime
 import json
 import os
-import sys
+import shlex
+import subprocess
 import time
 
 from collections import Sequence
 
-from lib.utils import print_msg, FLock
-from lib.runner import BaseRunner
+from lib.utils import print_msg, read_file, write_file
 
 
 DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
 DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+DAEMON_PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
 
 
 class HatClientException(Exception):
     '''Generic exception class for the client.'''
     pass
-        
+
+
 def parse_arguments():
     '''Parse arguments (for client) and
     return appropriate response back.
@@ -36,11 +38,11 @@ def parse_arguments():
                         required=False, action='store_true',
                         help='Show the number of queued jobs for current user')
     parser.add_argument('-a', '--add', dest='add_job',
-                        metavar='JOB SPEC', nargs='+',
+                        metavar='<command> <datetime> [<shell>]', nargs='+',
                         required=False, help='Add a new job')
     parser.add_argument('-r', '--remove', dest='remove_job',
-                        metavar='JOB ID', nargs='+',
-                        required=False, help='Add a new job')
+                        metavar='<JOB_ID>', nargs='+',
+                        required=False, help='Remove queued job(s)')
     
     args_ns = parser.parse_args()
     args_dict = vars(args_ns)
@@ -62,7 +64,23 @@ def argument_serializer(args_dict):
     return
 
 
-class ProcessSend:
+def check_daemon_process(pid_file):
+    '''Checks if the daemon process exists.'''
+    if not os.path.isfile(pid_file):
+        return False
+    pid = read_file(
+        pid_file,
+        whole=True
+    )
+    ret = subprocess.call(
+        shlex.split('/bin/ps -p {}'.format(pid)),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        )
+    return not ret
+    
+    
+class SendReceiveData:
     '''Takes and parses input, based on key creates and
     sends appropriate JSON for daemon. Input content must
     be a sequence with first element being the desired key.
@@ -92,7 +110,8 @@ class ProcessSend:
     def add_job_fmt(self, data):
         if len(data) not in {2, 3}:
             raise HatClientException('Ambiguous input')
-        command = '{} -c "{}"'.format(data[2], data[0]) if data[2] else data[0]
+        command = '{} -c "{}"'.format(data[2], data[0]) if len(data) == 3 \
+                  else data[0]
         self.out_dict = {
             'add_job': {
                 'euid': os.geteuid(),
@@ -122,29 +141,38 @@ class ProcessSend:
         }
 
     def send_to_daemon(self):
-        BaseRunner.write_to_file(
+        write_file(
             DAEMON_IN,
             json.dumps(self.out_dict),
             'wt',
             True
         )
 
-        
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print_msg('Not enough options/arguments')
+    def receive_from_daemon(self):
+        return read_file(
+            DAEMON_OUT,
+            whole=True,
+            json_loads=True
+        )
+
+    
+def main():
+    if not check_daemon_process(DAEMON_PID_FILE):
+        print_msg('Daemon (hatd) is not running')
         exit(127)
     args_dict = parse_arguments()
     data_seq = argument_serializer(args_dict)
     if not data_seq:
         print_msg('Ambiguous input')
         exit(126)
-    data = ProcessSend(data_seq)
+    data = SendReceiveData(data_seq)
     data.check_get_send()
-    time.sleep(1)
-    with open(DAEMON_OUT) as f:
-        while True:
-            for line in f:
-                print(json.loads(line))
+    time.sleep(0)
+    received = data.receive_from_daemon()
+    if received is not None:
+        print(received)
 
+        
+if __name__ == '__main__':
+    main()
     

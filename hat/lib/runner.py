@@ -1,6 +1,5 @@
 '''The base job runner and associative stuffs.'''
 
-import datetime
 import json
 import multiprocessing
 import os
@@ -9,8 +8,8 @@ import shlex
 import subprocess
 import time
 
-from .scheduler import Job, get_enqueued_jobs, remove_job
-from .utils import FLock
+from .scheduler import Job, get_enqueued_jobs, remove_job, HatTimerException
+from .utils import FLock, write_file
 
 
 class HatRunnerException(Exception):
@@ -36,6 +35,8 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         self.daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
         self.fifo_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
         self.fifo_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
+        self.daemon_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
+        self.daemon_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
         self.pickle_file = '/home/chayan/stuffs/hat/hatdb.pkl'
         self._running = False
         
@@ -51,7 +52,7 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         '''Stopping BaseRunner instance.'''
         # Sending an one item dict with key `stop`
         content = json.dumps({'stop': True})
-        self.write_to_file(self.fifo_in, content, 'wt', nodate=True)
+        write_file(self.fifo_in, content, 'wt', nodate=True)
 
     def _dump_db(self):
         '''Dumping `enqueued_jobs` to
@@ -73,7 +74,7 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                     try:
                         content = json.loads(line.strip())
                     except json.JSONDecodeError as e:
-                        self.write_to_file(self.daemon_log, str(e))
+                        write_file(self.daemon_log, str(e), mode='at')
                     else:
                         if len(content) in {3, 4}:
                             try:
@@ -83,22 +84,35 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                                     content['time_'],
                                     content.get('use_shell', False)
                                 )
-                            except KeyError:
-                                pass
+                            except (KeyError, HatTimerException) as e:
+                                write_file(
+                                    self.daemon_out,
+                                    {"error": {
+                                        "msg": str(e)
+                                    }
+                                    },
+                                    nodate=True,
+                                    json_dumps=True
+                                )
                             else:
                                 self._dump_db()
+                                write_file(
+                                    self.daemon_out,
+                                    {"msg": "Done"},
+                                    nodate=True,
+                                    json_dumps=True
+                                )
                         elif len(content) == 1:
                             # {'joblist': euid}
                             if 'joblist' in content:
-                                self.write_to_file(fifo_out,
-                                                   json.dumps(
-                                                       dict(self._joblist_raw(
-                                                        int(content['joblist'])
-                                                       )
-                                                       )
-                                                   ),
-                                                   mode='wt',
-                                                   nodate=True
+                                write_file(
+                                    fifo_out,
+                                    dict(self._joblist_raw(
+                                        int(content['joblist'])
+                                    )
+                                    ),
+                                    nodate=True,
+                                    json_dumps=True
                                 )
                             # {'stop': True}
                             elif 'stop' in content:
@@ -130,6 +144,11 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                     for euid, job_id in to_remove:
                         remove_job(euid, job_id)
                     self._dump_db()
+                    # write_file(self.daemon_out,
+                    #            {"msg": "Done"},
+                    #            nodate=True,
+                    #            json_dumps=True
+                    # )
                 time.sleep(0.1)
 
     def command_run_save(self, command, euid, stdout_file, stderr_file,
@@ -145,7 +164,7 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         returncode, stdout, stderr = self.run_command(command, use_shell,
                                                       job_id)
         self._check_and_write(stdout_file, euid, run_at, job_id, command,
-                              returncode, stdout)
+                              returncode, stdout, is_stdout=True)
         self._check_and_write(stderr_file, euid, run_at, job_id, command,
                               returncode, stderr)
 
@@ -171,38 +190,41 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                 error_msg = ('Interactive or screen refreshing'
                              ' commands are not allowed'
                 )
-                self.write_to_file(
+                write_file(
                     self.daemon_log,
-                    'id>{} : cmd>{} :: {}'.format(job_id, command, error_msg)
+                    'id>{} : cmd>{} :: {}'.format(job_id, command, error_msg),
+                    mode='at',
                 )
                 # raise HatRunnerException(error_msg)
             
     def _check_and_write(self, filename, euid, run_at, job_id, command,
-                         returncode, content):
+                         returncode, content, is_stdout=False):
         '''Checks the input content, converts and saves in
-        filename by calling `write_to_file` afterwards.
+        filename by calling `write_file` afterwards.
         '''
-        if content:
+        if content or is_stdout:
             content = 'euid>{} : id>{} : time>{} : cmd>{} : ret>{} :: out>{}'.format(
                 euid,
                 job_id,
                 time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(run_at)),
                 command, returncode, content.decode('utf-8')
             )
-            self.write_to_file(filename, content)
+            write_file(filename, content, mode='at')
             
     @staticmethod
-    def write_to_file(filename, content, mode='at', nodate=False):
-        '''Writes `content` to `filename`.'''
-        with FLock():
-            with open(filename, mode) as f:
-                f.write('{} : {}\n'.format(
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    content,
-                )
-                ) if not nodate else f.write('{}\n'.format(
-                    content)
-                )
+    def write_to_file(file_path, content, mode='at', nodate=False):
+        '''Deprecated in favor of `utils.write_file`.'''
+        return write_file(file_path, content, mode, nodate)
+    
+        # with FLock():
+        #     with open(filename, mode) as f:
+        #         f.write('{} : {}\n'.format(
+        #             datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        #             content,
+        #         )
+        #         ) if not nodate else f.write('{}\n'.format(
+        #             content)
+        #         )
                 
 
 if __name__ == '__main__':
