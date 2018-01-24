@@ -59,10 +59,11 @@ def remove_job(euid, job_id):
     try:
         del jobs[job_id]
     except KeyError:
-        write_file(DAEMON_LOG,
-                   'Removal failed: No such job with ID {} for UID {}'
-                   .format(job_id, euid),
-                   mode='at'
+        write_file(
+            DAEMON_LOG,
+            'Removal failed: No such job with ID {} for UID {}'
+            .format(job_id, euid),
+            mode='at'
         )
             
         

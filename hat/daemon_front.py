@@ -12,6 +12,7 @@ from daemon import HatDaemon
 
 DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
 DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+RUNNER_IN = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
 DAEMON_LOG = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
 PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
 
@@ -84,14 +85,16 @@ class DaemonWrapper:
                     except json.JSONDecodeError:
                         pass
                     else:
-                        self.parse_check_forward(content)
                         if 'stop' in content:
                             write_file(
                                 DAEMON_LOG,
                                 'Daemon stopped',
-                                'at'
+                                mode='at'
                             )
-                        break
+                        self.parse_check_forward(content)
+                        # This is redundant, just making sure
+                        if 'stop' in content:
+                            break
                 else:
                     time.sleep(0.1)
                     continue
@@ -112,5 +115,14 @@ if __name__ == '__main__':
     if daemon.status():
         write_file(PID_FILE, daemon.pid, nodate=True)
         daemon_wrapper = DaemonWrapper(daemon)
+        # To make first iteration of runner, sending a no-op to the
+        # runner_in fifo; runner will start with previous jobs now
+        write_file(
+             RUNNER_IN,
+             {'noop': True},
+             json_dumps=True,
+             nodate=True,
+        )
+        # Perpetual running
         daemon_wrapper.run()
 

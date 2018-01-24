@@ -4,10 +4,11 @@ After=local-fs.target
 
 [Service]
 Type=simple
+WorkingDirectory=/home/chayan/stuffs/hat
 ExecStart=/home/chayan/stuffs/hat/hatd start
 ExecStop=/home/chayan/stuffs/hat/hatd stop
-Restart=on-failure
-WorkingDirectory=/home/chayan/stuffs/hat
+Restart=on-abnormal
+RestartSec=2s
 
 [Install]
 WantedBy=multi-user.target

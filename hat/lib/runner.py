@@ -61,7 +61,7 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         pickle file (when anything changes),
         called from _runner.
         '''
-        with FLock():
+        with FLock(self.pickle_file):
             with open(self.pickle_file, 'wb') as fpkl:
                 pickle.dump(get_enqueued_jobs(-1), fpkl)
         
@@ -174,10 +174,12 @@ class BaseRunner(metaclass=BaseRunnerMeta):
         '''Runs a command, and returns (exit_status, STDOUT, STDERR) tuple.'''
         try:
             command_ = command if use_shell else shlex.split(command)
-            proc = subprocess.Popen(command_,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    shell=use_shell)
+            proc = subprocess.Popen(
+                command_,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=use_shell
+            )
         except Exception as err:
             # Setting `returncode` to 127
             returncode, stdout, stderr = 127, b'', bytes(str(err), 'utf-8')

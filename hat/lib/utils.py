@@ -10,6 +10,7 @@ import time
 class FLock:
     '''A context manager for exclusive locking (LOCK_EX) of files.'''
     def __init__(self, lockfile_prefix=''):
+        lockfile_prefix = lockfile_prefix.replace('/', '_')
         self.lockfile = os.path.join(os.path.dirname(__file__),
                                      '._{}.lock'.format(lockfile_prefix))
 

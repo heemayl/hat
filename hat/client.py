@@ -73,12 +73,15 @@ def check_daemon_process(pid_file):
         pid_file,
         whole=True
     )
-    ret = subprocess.call(
-        shlex.split('/bin/ps -p {}'.format(pid)),
-        stdout=subprocess.DEVNULL,
+    proc = subprocess.Popen(
+        shlex.split('/bin/ps -p {} -o cmd='.format(pid)),
+        stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         )
-    return not ret
+    ret = proc.wait()
+    if not ret or b'hat/daemon_front.py' in proc.communicate()[0]:
+        return True
+    return False
     
     
 class SendReceiveData:
@@ -167,7 +170,7 @@ class SendReceiveData:
 def main():
     if len(sys.argv) == 2:
         if sys.argv[1] == 'stop_daemon':
-            if not os.geteuid():
+            if os.geteuid():
                 print_msg('Unknown operation')
                 exit(1)
             data_seq = ('stop_daemon', True)

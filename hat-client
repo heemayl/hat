@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# The client for the hat-daemon. This is just
+# a wrapper around client.py, passes the
+# argumemts as-is to client.py
+
+# sourcing env_base
+. /home/chayan/stuffs/hat/env_base.sh
+
+PYTHON_BIN="$(command -v python3)"
+[ -z "${PYTHON_BIN}" ] && print_msg "hatd requires python3" >&2 \
+				  && exit 1
+
+CLIENT="${BASE_DIR}hat/client.py"
+
+exec "${PYTHON_BIN}" "${CLIENT}" "$@"
+
