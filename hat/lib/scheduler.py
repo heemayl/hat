@@ -37,6 +37,7 @@ def _check_perm(euid):
             "UID {}: Permission denied".format(euid),
             mode='at',
         )
+        
         raise HatJobException(
             'UID {}: Permission denied'.format(euid))
 
@@ -47,13 +48,13 @@ def get_enqueued_jobs(euid):
     # TODO: Anything more creative (and robust)?
     if euid == -1:
         return enqueued_jobs
-    _check_perm(euid)
+    # _check_perm(euid)
     return enqueued_jobs.get(euid, {})
 
 
 def remove_job(euid, job_id):
     '''Remove a job from enqueued_jobs based on job ID.'''
-    _check_perm(euid)
+    # _check_perm(euid)
     jobs = get_enqueued_jobs(euid)
     try:
         del jobs[job_id]
@@ -99,7 +100,7 @@ class Job(metaclass=JobMeta):
         self.time_str = time_
         self.use_shell = use_shell
         # Checking Permission
-        _check_perm(self.euid)
+        # _check_perm(self.euid)
         # Getting when to run in Epoch 
         self.date_time_epoch = self.get_run_at_epoch()
         if not self.date_time_epoch:

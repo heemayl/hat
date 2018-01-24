@@ -6,6 +6,7 @@ import json
 import os
 import shlex
 import subprocess
+import sys
 import time
 
 from collections import Sequence
@@ -94,6 +95,7 @@ class SendReceiveData:
             'remove_job': self.remove_job_fmt,
             'joblist': self.joblist_fmt,
             'jobcount': self.jobcount_fmt,
+            'stop_daemon': self.stop_daemon,
         }
 
     def check_get_send(self):
@@ -140,12 +142,18 @@ class SendReceiveData:
             'jobcount': os.geteuid()
         }
 
+    def stop_daemon(self, _):
+        self.out_dict = {
+            'stop': True
+        }
+
     def send_to_daemon(self):
         write_file(
             DAEMON_IN,
-            json.dumps(self.out_dict),
-            'wt',
-            True
+            self.out_dict,
+            mode='wt',
+            nodate=True,
+            json_dumps=True
         )
 
     def receive_from_daemon(self):
@@ -157,6 +165,15 @@ class SendReceiveData:
 
     
 def main():
+    if len(sys.argv) == 2:
+        if sys.argv[1] == 'stop_daemon':
+            if not os.geteuid():
+                print_msg('Unknown operation')
+                exit(1)
+            data_seq = ('stop_daemon', True)
+            data = SendReceiveData(data_seq)
+            data.check_get_send()
+            exit(0)
     if not check_daemon_process(DAEMON_PID_FILE):
         print_msg('Daemon (hatd) is not running')
         exit(127)
@@ -167,7 +184,6 @@ def main():
         exit(126)
     data = SendReceiveData(data_seq)
     data.check_get_send()
-    time.sleep(0)
     received = data.receive_from_daemon()
     if received is not None:
         print(received)

@@ -51,9 +51,11 @@ class BaseRunner(metaclass=BaseRunnerMeta):
     def stop(self):
         '''Stopping BaseRunner instance.'''
         # Sending an one item dict with key `stop`
-        content = json.dumps({'stop': True})
-        write_file(self.fifo_in, content, 'wt', nodate=True)
-
+        content = {'stop': True}
+        write_file(self.fifo_in, content, 'wt', nodate=True, json_dumps=True)
+        time.sleep(1)
+        return True
+    
     def _dump_db(self):
         '''Dumping `enqueued_jobs` to
         pickle file (when anything changes),

@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Wrapper script that starts/stops the hat-daemon
+# by calling daemon_front.py/client.py directly
+# with proper argument(s).
+
+print_msg() {
+    printf '%s\n' "$@"
+}
+
+PYTHON_BIN="$(command -v python3)"
+[ -z "${PYTHON_BIN}" ] && print_msg "hatd requires python3" >&2 \
+				  && exit 1
+
+HATD_PID_FILE='/home/chayan/stuffs/hat/hatd.pid'
+
+DAEMON_FRONT='hat/daemon_front.py'  # relative
+CLIENT='hat/client.py'  # relative
+
+# Daemon running->ret=0, Not running->ret=1
+check_daemon() {
+    if [ ! -f "${HATD_PID_FILE}" ]; then
+	return 1
+    else
+	pid="$(cat <"${HATD_PID_FILE}")"
+	if ! out="$(/bin/ps -p "$pid" -o cmd= >/dev/null 2>&1)"; then
+	    return 1
+	else
+	    case "hat/daemon_front.py" in
+		*${out}*)
+		    return 0
+		    ;;
+		*)
+		    return 1
+		    ;;
+	    esac
+	fi
+    fi
+}
+
+
+case "$1" in
+    "start")
+	if check_daemon; then
+	    print_msg "Daemon is already running" && exit 0
+	else
+	    exec "${PYTHON_BIN}" "${DAEMON_FRONT}" start
+	fi
+	;;
+    "stop")
+	if check_daemon; then
+	    exec "${PYTHON_BIN}" "${CLIENT}" stop_daemon
+	else
+	    print_msg "Daemon is not running" && exit 0
+	fi
+	;;
+    *)
+	print_msg "Valid arguments are start/stop" >&2
+	exit 2
+	;;
+esac
+

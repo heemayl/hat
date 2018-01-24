@@ -1,0 +1,14 @@
+[Unit]
+Description=Hyper-AT (HAT) daemon
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/home/chayan/stuffs/hat/hatd start
+ExecStop=/home/chayan/stuffs/hat/hatd stop
+Restart=on-failure
+WorkingDirectory=/home/chayan/stuffs/hat
+
+[Install]
+WantedBy=multi-user.target
+Alias=hatd.service

@@ -36,17 +36,22 @@ class HatDaemon(metaclass=HatDaemonMeta):
     def start(self):
         '''Starting the daemon.'''
         self.daemon.start()
+        write_file(
+            self.daemon_log,
+            'Daemon started: PID {}'.format(self.pid),
+            'at'
+        )
         time.sleep(1)
         return self.status()
 
     def stop(self):
         '''Stop should be foreceful, if needed.'''
         self.runner.stop()
-        if not self.status():
+        if self.status():
             self.daemon.terminate()
-        if not self.status():
+        if self.status():
             subprocess.call(
-                'kill -9 {}'.format(self.daemon.pid),
+                'kill -9 {}'.format(self.pid),
                 shell=True
             )
         return True

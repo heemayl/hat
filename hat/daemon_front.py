@@ -12,6 +12,7 @@ from daemon import HatDaemon
 
 DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
 DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
+DAEMON_LOG = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
 PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
 
 
@@ -25,6 +26,7 @@ class DaemonWrapper:
             'remove_job': self.remove_job,
             'joblist': self.joblist,
             'jobcount': self.jobcount,
+            'stop': self.stop_daemon,
         }
         
     def add_job(self, value):
@@ -54,6 +56,10 @@ class DaemonWrapper:
         output = self.daemon.jobcount(int(value))
         self._write_daemon_out(output)
 
+    def stop_daemon(self, *_):
+        '''Stops the daemon.'''
+        self.daemon.stop()
+        
     def parse_check_forward(self, content):
         '''Takes the input content, checks validity;
         if valid, passes to upstream, discards otherwise.
@@ -79,7 +85,17 @@ class DaemonWrapper:
                         pass
                     else:
                         self.parse_check_forward(content)
-                time.sleep(0.1)
+                        if 'stop' in content:
+                            write_file(
+                                DAEMON_LOG,
+                                'Daemon stopped',
+                                'at'
+                            )
+                        break
+                else:
+                    time.sleep(0.1)
+                    continue
+                break
 
     
 if __name__ == '__main__':
