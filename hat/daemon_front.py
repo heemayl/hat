@@ -10,11 +10,11 @@ from lib.utils import write_file
 from daemon import HatDaemon
 
 
-DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
-RUNNER_IN = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
-DAEMON_LOG = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
-PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
+DAEMON_IN = '/var/run/hatd/ipc/daemon_in.fifo'
+DAEMON_OUT = '/var/run/hatd/ipc/daemon_out.fifo'
+RUNNER_IN = '/var/run/hatd/ipc/runner_in.fifo'
+DAEMON_LOG = '/var/log/hatd/daemon.log'
+PID_FILE = '/var/run/hatd/hatd.pid'
 
 
 class DaemonWrapper:

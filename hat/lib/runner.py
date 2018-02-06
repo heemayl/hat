@@ -9,7 +9,7 @@ import subprocess
 import time
 
 from .scheduler import Job, get_enqueued_jobs, remove_job, HatTimerException
-from .utils import FLock, write_file
+from .utils import FLock, write_file, username_from_euid
 
 
 class HatRunnerException(Exception):
@@ -30,16 +30,14 @@ class BaseRunnerMeta(type):
 class BaseRunner(metaclass=BaseRunnerMeta):
     '''The base command runner. This is a singleton.'''    
     def __init__(self):
-        self.stdout_file = '/home/chayan/stuffs/hat/logs/hat/stdout.log'
-        self.stderr_file = '/home/chayan/stuffs/hat/logs/hat/stderr.log'
-        self.daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
-        self.fifo_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
-        self.fifo_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
-        self.daemon_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-        self.daemon_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
-        self.pickle_file = '/home/chayan/stuffs/hat/hatdb.pkl'
+        self.daemon_log = '/var/log/hatd/daemon.log'
+        self.fifo_in = '/var/run/hatd/ipc/runner_in.fifo'
+        self.fifo_out = '/var/run/hatd/ipc/runner_out.fifo'
+        self.daemon_in = '/var/run/hatd/ipc/daemon_in.fifo'
+        self.daemon_out = '/var/run/hatd/ipc/daemon_out.fifo'
+        self.pickle_file = '/var/lib/hatd/hatdb.pkl'
         self._running = False
-        
+
     def _joblist_raw(self, euid):
         return get_enqueued_jobs(euid)
 
@@ -133,8 +131,12 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                                     args=(job['command'],),
                                     kwargs={
                                         'euid': euid,
-                                        'stdout_file': self.stdout_file,
-                                        'stderr_file': self.stderr_file,
+                                        'stdout_file':
+                                            '/home/{}/.hatd/logs/stdout.log'
+                                            .format(username_from_euid(euid)),
+                                        'stderr_file':
+                                            '/home/{}/.hatd/logs/stderr.log'
+                                            .format(username_from_euid(euid)),
                                         'use_shell': job.get('use_shell',
                                                              False),
                                         'job_id': job_id,

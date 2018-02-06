@@ -13,15 +13,18 @@ from abc import ABCMeta
 from .utils import write_file
 
 
-PICKLE_FILE = '/home/chayan/stuffs/hat/hatdb.pkl'
-DAEMON_LOG = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
+PICKLE_FILE = '/var/lib/hatd/hatdb.pkl'
+DAEMON_LOG = '/var/log/hatd/daemon.log'
 
 # Loading previous jobs (if any)
-with open(PICKLE_FILE, 'rb') as fpkl:
-    try:
-        saved_data = pickle.load(fpkl)
-    except EOFError:
-        saved_data = None
+try:
+    with open(PICKLE_FILE, 'rb') as fpkl:
+        try:
+            saved_data = pickle.load(fpkl)
+        except EOFError:
+            saved_data = None
+except FileNotFoundError:
+    saved_data = None
         
 enqueued_jobs = saved_data or collections.defaultdict(dict)
 

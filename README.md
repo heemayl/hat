@@ -10,5 +10,19 @@ Benefits of `hat`:
 
 ---
 
-### This project is a "work in progress". Installation guide will be added once the base project is ready and tested.
+# Installation:
+
+1. Clone or download the repository
+
+2. Run the `installer.sh` script as superuser
+
+3. Done!
+
+**N.B** The userspace client/command is `hatc`, which you should be using.
+
+---
+
+
+
+
 

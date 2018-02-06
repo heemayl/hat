@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Wrapper script that starts/stops the hat-daemon
 # by calling daemon_front.py/client.py directly
 # with proper argument(s).
+
+export PATH='/bin:/usr/bin:/sbin:/usr/sbin'
 
 print_msg() {
     printf '%s\n' "$@"
@@ -12,10 +14,12 @@ PYTHON_BIN="$(command -v python3)"
 [ -z "${PYTHON_BIN}" ] && print_msg "hatd requires python3" >&2 \
 				  && exit 1
 
-HATD_PID_FILE='/home/chayan/stuffs/hat/hatd.pid'
+HATD_RUN_DIR='/var/run/hatd'
+HATD_PID_FILE='/var/run/hatd/hatd.pid'
 
 DAEMON_FRONT='hat/daemon_front.py'  # relative
 CLIENT='hat/client.py'  # relative
+
 
 # Daemon running->ret=0, Not running->ret=1
 check_daemon() {
@@ -23,7 +27,7 @@ check_daemon() {
 	return 1
     else
 	pid="$(cat <"${HATD_PID_FILE}")"
-	if ! out="$(/bin/ps -p "$pid" -o cmd= >/dev/null 2>&1)"; then
+	if ! out="$(ps -p "$pid" -o cmd= >/dev/null 2>&1)"; then
 	    return 1
 	else
 	    case "hat/daemon_front.py" in
@@ -39,16 +43,49 @@ check_daemon() {
 }
 
 
+# Create or unlink necessary files (mostly FIFOs)
+mk_rm_files() {
+    files=(
+	"${HATD_RUN_DIR}/ipc/runner_in.fifo"
+	"${HATD_RUN_DIR}/ipc/runner_out.fifo"
+	"${HATD_RUN_DIR}/ipc/daemon_in.fifo"
+	"${HATD_RUN_DIR}/ipc/daemon_out.fifo"
+	"${HATD_PID_FILE}"
+    )
+    if [[ $1 == "create" ]]; then
+	for file in "${files[@]}"; do
+	    rm -f "${file}"
+	    if [[ $file == *_in.fifo ]]; then
+		mkfifo "${file}" && chmod 0666 "${file}"
+	    elif [[ $file == *_out.fifo ]]; then
+		mkfifo "${file}" && chmod 0644 "${file}"
+	    else
+		: >"${file}" && chmod 0644 "${file}"
+	    fi
+	done
+    elif [[ $1 == "remove" ]]; then
+	rm -f "${files[@]}"
+	rm -f "${HATD_RUN_DIR}"/locks/*
+    fi
+}
+
+
 case "$1" in
     "start")
 	if check_daemon; then
 	    print_msg "Daemon is already running" && exit 0
 	else
+	    [[ -d ${HATD_RUN_DIR}/ipc && -d ${HATD_RUN_DIR}/locks ]] || \
+		 { mkdir -p "${HATD_RUN_DIR}"/{ipc,locks} && \
+			 chmod 0777 "${HATD_RUN_DIR}"/{ipc,locks} && \
+			 chmod 0755 "${HATD_RUN_DIR}" ;}
+	    mk_rm_files "create"
 	    exec "${PYTHON_BIN}" "${DAEMON_FRONT}" start
 	fi
 	;;
     "stop")
 	if check_daemon; then
+	    mk_rm_files "remove"
 	    exec "${PYTHON_BIN}" "${CLIENT}" stop_daemon
 	else
 	    print_msg "Daemon is not running" && exit 0

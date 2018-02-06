@@ -1,8 +1,6 @@
 '''The client.'''
 
 import argparse
-import datetime
-import json
 import os
 import shlex
 import subprocess
@@ -11,12 +9,15 @@ import time
 
 from collections import Sequence
 
-from lib.utils import print_msg, read_file, write_file
+from lib.utils import print_msg, read_file, write_file, username_from_euid
+from lib.humantime_epoch_converter import main as get_epoch_main
 
 
-DAEMON_IN = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-DAEMON_OUT = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
-DAEMON_PID_FILE = '/home/chayan/stuffs/hat/hatd.pid'
+DAEMON_IN = '/var/run/hatd/ipc/daemon_in.fifo'
+DAEMON_OUT = '/var/run/hatd/ipc/daemon_out.fifo'
+DAEMON_PID_FILE = '/var/run/hatd/hatd.pid'
+USER_DIR = '/home/{}/.hatd'.format(username_from_euid(os.geteuid())) \
+           if os.geteuid != 0 else '/root/.hatd'
 
 
 class HatClientException(Exception):
@@ -24,6 +25,18 @@ class HatClientException(Exception):
     pass
 
 
+def create_user_files():
+    '''Create necessary dirs and files
+    for the invoking user.
+    '''
+    os.makedirs('{}/logs'.format(USER_DIR), mode=0o700, exist_ok=True)
+    for file_ in {'stdout.log', 'stderr.log'}:
+        file_ = '{}/logs/{}'.format(USER_DIR, file_)
+        if not os.path.isfile(file_):
+            with open(file_, 'wt') as f:
+                f.write('')
+
+                
 def parse_arguments():
     '''Parse arguments (for client) and
     return appropriate response back.
@@ -117,11 +130,14 @@ class SendReceiveData:
             raise HatClientException('Ambiguous input')
         command = '{} -c "{}"'.format(data[2], data[0]) if len(data) == 3 \
                   else data[0]
+        time_ = time.strftime('%Y-%m-%d_%H:%M:%S',
+                              time.localtime(get_epoch_main(data[1])))
+        
         self.out_dict = {
             'add_job': {
                 'euid': os.geteuid(),
                 'command': command,
-                'time_': data[1],
+                'time_': time_,
                 'use_shell': data[2] if len(data) == 3 else False
             }
         }
@@ -185,6 +201,7 @@ def main():
     if not data_seq:
         print_msg('Ambiguous input')
         exit(126)
+    create_user_files()
     data = SendReceiveData(data_seq)
     data.check_get_send()
     received = data.receive_from_daemon()

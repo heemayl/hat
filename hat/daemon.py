@@ -27,11 +27,11 @@ class HatDaemon(metaclass=HatDaemonMeta):
             # daemon=True,
             name='hatd',
         )
-        self.runner_in = '/home/chayan/stuffs/hat/ipc/runner_in.fifo'
-        self.runner_out = '/home/chayan/stuffs/hat/ipc/runner_out.fifo'
-        self.daemon_in = '/home/chayan/stuffs/hat/ipc/daemon_in.fifo'
-        self.daemon_out = '/home/chayan/stuffs/hat/ipc/daemon_out.fifo'
-        self.daemon_log = '/home/chayan/stuffs/hat/logs/hat/daemon.log'
+        self.runner_in = '/var/run/hatd/ipc/runner_in.fifo'
+        self.runner_out = '/var/run/hatd/ipc/runner_out.fifo'
+        self.daemon_in = '/var/run/hatd/ipc/daemon_in.fifo'
+        self.daemon_out = '/var/run/hatd/ipc/daemon_out.fifo'
+        self.daemon_log = '/var/log/hatd/daemon.log'
         
     def start(self):
         '''Starting the daemon.'''
