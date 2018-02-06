@@ -70,16 +70,25 @@ mk_rm_files() {
 }
 
 
+# Make the locks dir SETGID
+setgid_locks_dir() {
+    mkdir -p /var/run/hatd/locks
+    chown :hatd /var/run/hatd/locks
+    chmod g+s /var/run/hatd/locks 
+}
+
+
 case "$1" in
     "start")
 	if check_daemon; then
 	    print_msg "Daemon is already running" && exit 0
 	else
-	    [[ -d ${HATD_RUN_DIR}/ipc && -d ${HATD_RUN_DIR}/locks ]] || \
-		 { mkdir -p "${HATD_RUN_DIR}"/{ipc,locks} && \
-			 chmod 0777 "${HATD_RUN_DIR}"/{ipc,locks} && \
+	    [[ -d ${HATD_RUN_DIR}/ipc ]] || \
+		 { mkdir -p "${HATD_RUN_DIR}"/ipc && \
+			 chmod 0777 "${HATD_RUN_DIR}"/ipc && \
 			 chmod 0755 "${HATD_RUN_DIR}" ;}
 	    mk_rm_files "create"
+	    setgid_locks_dir
 	    exec "${PYTHON_BIN}" "${DAEMON_FRONT}" start
 	fi
 	;;

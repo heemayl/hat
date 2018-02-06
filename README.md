@@ -14,15 +14,11 @@ Benefits of `hat`:
 
 1. Clone or download the repository
 
-2. Run the `installer.sh` script as superuser
+2. Run the `install.sh` script as superuser
 
-3. Done!
+3. Check `hatc --help`
 
-**N.B** The userspace client/command is `hatc`, which you should be using.
+**N.B** The userspace command is `hatc` -- the only thing you should need.
 
 ---
-
-
-
-
 
