@@ -33,8 +33,14 @@ chmod g+s /var/run/hatd/locks
 
 # Start the daemon
 systemctl daemon-reload
+systemctl enable hat-daemon.service
 systemctl start hatd.service
 
 # Print done msg
-echo 'Installation Done and daemon started! Now, please check `hatc --help`'
-
+msgs=($'\nInstallation Done and daemon started!\n'
+      'Now, do the following:'
+      $'\t1. Add the user(s) who can schedule jobs to the `hatd` group e.g. for user `foobar`: usermod -a -G hatd foobar'
+      $'\t2. Read `hatc --help`'
+     )
+      
+printf '%s\n' "${msgs[@]}"

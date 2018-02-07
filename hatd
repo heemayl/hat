@@ -56,25 +56,29 @@ mk_rm_files() {
 	for file in "${files[@]}"; do
 	    rm -f "${file}"
 	    if [[ $file == *_in.fifo ]]; then
-		mkfifo "${file}" && chmod 0666 "${file}"
+		mkfifo "${file}" && chmod 0660 "${file}"
 	    elif [[ $file == *_out.fifo ]]; then
-		mkfifo "${file}" && chmod 0644 "${file}"
+		mkfifo "${file}" && chmod 0640 "${file}"
 	    else
 		: >"${file}" && chmod 0644 "${file}"
 	    fi
 	done
     elif [[ $1 == "remove" ]]; then
 	rm -f "${files[@]}"
-	rm -f "${HATD_RUN_DIR}"/locks/*
+	rm -f "${HATD_RUN_DIR}"/locks/._*
     fi
 }
 
 
-# Make the locks dir SETGID
-setgid_locks_dir() {
-    mkdir -p /var/run/hatd/locks
-    chown :hatd /var/run/hatd/locks
-    chmod g+s /var/run/hatd/locks 
+# Create relevant dirs and meke them SETGID
+create_setgid_dirs() {
+    for dir in ipc locks; do
+	mkdir -p "${HATD_RUN_DIR}/${dir}"
+	chown :hatd "${HATD_RUN_DIR}/${dir}"
+	chmod 0770 "${HATD_RUN_DIR}/${dir}"
+	chmod g+s "${HATD_RUN_DIR}/${dir}"
+    done
+    chmod 0755 "${HATD_RUN_DIR}"
 }
 
 
@@ -83,12 +87,8 @@ case "$1" in
 	if check_daemon; then
 	    print_msg "Daemon is already running" && exit 0
 	else
-	    [[ -d ${HATD_RUN_DIR}/ipc ]] || \
-		 { mkdir -p "${HATD_RUN_DIR}"/ipc && \
-			 chmod 0777 "${HATD_RUN_DIR}"/ipc && \
-			 chmod 0755 "${HATD_RUN_DIR}" ;}
+	    create_setgid_dirs
 	    mk_rm_files "create"
-	    setgid_locks_dir
 	    exec "${PYTHON_BIN}" "${DAEMON_FRONT}" start
 	fi
 	;;

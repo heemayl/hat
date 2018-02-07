@@ -44,7 +44,7 @@ def parse_arguments():
     # if not args:
     #     print_msg('Not enough options/arguments given')
     #     return
-    parser = argparse.ArgumentParser(description='hat client')
+    parser = argparse.ArgumentParser(prog='hatc', description='hat client')
     parser.add_argument('-l', '--list', dest='joblist',
                         required=False, action='store_true',
                         help='Show the list of queued jobs for current user')
