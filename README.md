@@ -59,7 +59,7 @@ Benefits of `hat`:
     [
         "1",
 	{
-	    "command": "whoami",
+	    "command": "free",
 	    "job_run_at": 1518040077,
 	    "use_shell": false
 	}
