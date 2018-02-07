@@ -4,9 +4,9 @@ After=local-fs.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/chayan/stuffs/hat
-ExecStart=/home/chayan/stuffs/hat/hatd start
-ExecStop=/home/chayan/stuffs/hat/hatd stop
+WorkingDirectory=/usr/lib/hatd
+ExecStart=/usr/lib/hatd/hatd start
+ExecStop=/usr/lib/hatd/hatd stop
 Restart=on-abnormal
 RestartSec=2s
 
