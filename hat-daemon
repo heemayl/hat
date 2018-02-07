@@ -1,0 +1,8 @@
+/var/log/hatd/*.log {
+	weekly
+	maxsize 10M
+	missingok
+	rotate 14
+	compress
+	notifempty
+}

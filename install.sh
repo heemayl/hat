@@ -2,7 +2,7 @@
 
 # Installer file for HAT (Hyper-AT)
 
-(( EUID == 0 )) || { echo "Please run as superuser e.g. `sudo ./install.sh`" && \
+(( EUID == 0 )) || { echo "Please run as superuser e.g. sudo ./install.sh" && \
 			   exit 1 ;}
 
 export PATH='/bin:/usr/bin:/sbin:/usr/sbin'
@@ -24,6 +24,9 @@ ln -sf "${HAT_DIR}"/hat-client /usr/bin/hatc
 
 # Create log dir
 mkdir -p /var/log/hatd/
+
+# Copying the logrotate file
+cp hat-daemon /etc/logrotate.d/
 
 # Create `hatd` group and set SETGID on `/var/run/hatd/locks/`
 addgroup hatd
