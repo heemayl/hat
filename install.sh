@@ -34,16 +34,16 @@ mkdir -p /var/run/hatd/locks
 chown :hatd /var/run/hatd/locks
 chmod g+s /var/run/hatd/locks 
 
-# Start the daemon
-systemctl daemon-reload
-systemctl enable hat-daemon.service
-systemctl start hatd.service
-
 # Print done msg
 msgs=($'\nInstallation Done and daemon started!\n'
       'Now, do the following:'
       $'\t1. Add the user(s) who can schedule jobs to the `hatd` group e.g. for user `foobar`: usermod -a -G hatd foobar'
-      $'\t2. Read `hatc --help`'
+      $'\t2. For group changes to take effect on any live session of the user, the user needs to logout of that session, and then login Or simply start a new session'
+      $'\t3. Read `hatc --help`'
      )
-      
-printf '%s\n' "${msgs[@]}"
+
+# Start the daemon
+systemctl daemon-reload
+systemctl enable hat-daemon.service && \
+    systemctl start hatd.service && { printf '%s\n' "${msgs[@]}" || printf '%s\n' "Installation Failed!" ;}
+

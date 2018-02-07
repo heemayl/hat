@@ -6,6 +6,5 @@ logs/*
 */__pycache__/*
 *.pyc
 *.lock*
-test*
 *.pkl
 hatd.pid

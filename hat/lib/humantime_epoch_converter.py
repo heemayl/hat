@@ -24,7 +24,9 @@ class DateTime:
     to Python datetime object and converts that into Epoch eventually.
     '''
     def __init__(self, str_dt):
-        self.str_dt = str_dt.lower().strip().strip(':')
+        self.str_dt = str_dt.lower().strip().strip(':')\
+                                            .replace('+', ' + ')\
+                                            .replace('-', ' - ')
         self.list_dt = self.str_dt.split()
         
     def check_get(self):
