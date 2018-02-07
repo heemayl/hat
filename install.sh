@@ -26,7 +26,7 @@ ln -sf "${HAT_DIR}"/hat-client /usr/bin/hatc
 mkdir -p /var/log/hatd/
 
 # Copying the logrotate file
-cp hat-daemon /etc/logrotate.d/
+cp "${HAT_DIR}"/system/hat-daemon /etc/logrotate.d/
 
 # Create `hatd` group and set SETGID on `/var/run/hatd/locks/`
 addgroup hatd
