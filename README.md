@@ -30,12 +30,19 @@ Benefits of `hat`:
 
 ```bash
 
+# Job listing: --list/-l
 % hatc -l
 Job queue is empty
 
+# `hatc --list` is the default
+% hatc
+Job queue is empty
+
+# Job count: --count/-c
 % hatc -c
 0
 
+# Job addition/scheduling: --add/-a
 % hatc --add free 'now + 5 min'
 {'msg': 'Done'}
 
@@ -57,6 +64,7 @@ ID		    Time		Shell		Command
 % hatc -c
 2
 
+# Job removal: --remove/-r
 % hatc --remove 1
 {'msg': 'Queued'}
 
@@ -83,6 +91,7 @@ Job queue is empty
 ID		    Time	       Shell		Command
 1	    2018-02-09T03:41:57		 -		free
 
+# Job modification: --modify/-m
 % hatc --modify 1 'free -m' _
 {'msg': 'Done'}
 
