@@ -69,14 +69,15 @@ class HatDaemon(metaclass=HatDaemonMeta):
     def pid(self):
         return self.daemon.pid
 
-    def add_job(self, euid, command, time_, use_shell=False):
+    def add_job(self, euid, command, time_, use_shell=False, job_id=None):
         '''Adds a new job.'''
         # Sending `job` dict to fifo with required params
         job = {
             'euid': euid,
             'command': command,
             'time_': time_,
-            'use_shell': use_shell
+            'use_shell': use_shell,
+            'job_id': job_id
         }
         write_file(
             self.runner_in,

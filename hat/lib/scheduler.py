@@ -98,28 +98,42 @@ class JobMeta(ABCMeta):
 
 class Job(metaclass=JobMeta):
     '''A job to be done at specified time.'''
-    def __init__(self, euid, command, time_, use_shell=False):
-        self.euid = euid
-        self.command = command
-        self.time_str = time_
-        self.use_shell = use_shell
+    def __init__(self, euid, command, time_, use_shell=False, job_id=None):
+        self.euid = int(euid)
         # Checking Permission
         # _check_perm(self.euid)
-        # Getting when to run in Epoch 
-        self.date_time_epoch = self.get_run_at_epoch()
+        # job_id is sent by runner when updating a Job params
+        if job_id:
+            job = enqueued_jobs[self.euid][job_id]
+            self.job_id = job_id
+            self.command = job['command'] if command == '_' \
+                else command
+            if time_ == '_':
+                self.date_time_epoch = job['job_run_at']
+            else:
+                self.time_str = time_
+                self.date_time_epoch = self.get_run_at_epoch()
+            self.use_shell = job['use_shell'] if use_shell == '_' \
+                else use_shell
+        else:
+            self.command = command
+            self.use_shell = use_shell
+            self.time_str = time_
+            self.date_time_epoch = self.get_run_at_epoch()
+            # Saving the job, with the user's EUID as keys, and increasing
+            # IDs as subdict keys with command, time, use_shell as values
+            self.job_id = self._get_job_id()
+
         if not self.date_time_epoch:
             return
-        # Saving the job, with the user's EUID as keys, and increasing
-        # IDs as subdict keys with command, time, use_shell as values
-        self.job_id = self._get_job_id()
-        enqueued_jobs[int(euid)].update({
+        enqueued_jobs[self.euid].update({
             self.job_id: {
                 'command': self.command,
                 'job_run_at': int(self.date_time_epoch),  # to int
                 'use_shell': self.use_shell,
             }
         })
-
+        
     def _get_job_id(self):
         '''Get job ID, to be used as the Job dict key.'''
         # We'll wrap around at 40000

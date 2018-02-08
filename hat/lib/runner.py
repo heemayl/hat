@@ -76,13 +76,14 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                     except json.JSONDecodeError as e:
                         write_file(self.daemon_log, str(e), mode='at')
                     else:
-                        if len(content) in {3, 4}:
+                        if 3 <= len(content) <= 5:
                             try:
                                 Job(
                                     int(content['euid']),
                                     content['command'],
                                     content['time_'],
-                                    content.get('use_shell', False)
+                                    content.get('use_shell', False),
+                                    content.get('job_id')
                                 )
                             except (KeyError, HatTimerException) as e:
                                 write_file(

@@ -2,6 +2,7 @@
 
 import datetime
 import fcntl
+import logging
 import json
 import os
 import time
@@ -16,6 +17,10 @@ class FLock:
 
     def __enter__(self):
         self.lockf = open(self.lockfile, 'w')
+        try:
+            os.chmod(self.lockfile, 0o660)
+        except PermissionError:
+            pass
         while True:
             try:
                 fcntl.lockf(self.lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -75,6 +80,19 @@ def username_from_euid(euid):
             if str(euid) in line:
                 return line[0]
 
+
+def get_logger(logfile='/var/log/hatd/debug.log'):
+    # Enable (debug) logging to /var/log/hatd/debug.log
+    logger = logging.getLogger('hatd_base_logger')
+    
+    handler = logging.FileHandler(logfile)
+    handler.setFormatter(logging.Formatter('%(asctime)s:: %(message)s'))
+    handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    return logger
+    
             
 if __name__ == '__main__':
     pass

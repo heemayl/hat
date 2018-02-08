@@ -4,6 +4,7 @@ Benefits of `hat`:
 
 - Seconds resolution i.e. you can run job at the mentioned second
 - Use your shell of choice; you're not bound to `/bin/sh`
+- Job modification is supported; you can easily modify command, time of an enqueued job
 - Flexible datetime specifications, see https://github.com/heemayl/humantime-epoch-converter
 - Will run a scheduled job later when the computer was off at that time, so no job will be missed
 - User specific jobs, secured approach
@@ -65,6 +66,37 @@ ID		    Time		Shell		Command
 
 % hatc -c
 1
+
+% hatc --remove 2
+{'msg': 'Queued'}
+
+% hatc -l
+Job queue is empty
+
+% hatc -c
+0
+
+% hatc -a free 'now +30 mins'
+{'msg': 'Done'}
+
+% hatc -l
+ID		    Time	       Shell		Command
+1	    2018-02-09T03:41:57		 -		free
+
+% hatc --modify 1 'free -m' _
+{'msg': 'Done'}
+
+% hatc -l
+ID		    Time	       Shell		Command
+1	    2018-02-09T03:41:57		 -		free -m
+
+% hatc -m 1 _ 'today 14:30:42'
+{'msg': 'Done'}
+
+% hatc -l
+ID     		    Time	       Shell		Command
+1 	    2018-02-09T14:30:42		 -		free -m
+
 
 ```
 

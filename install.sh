@@ -8,6 +8,7 @@
 export PATH='/bin:/usr/bin:/sbin:/usr/sbin'
 
 HAT_DIR='/usr/lib/hatd'
+HAT_DB_DIR='/var/lib/hatd'
 mkdir -p "${HAT_DIR}"
 
 # Copy everything to `$HAT_DIR`
@@ -24,6 +25,9 @@ ln -sf "${HAT_DIR}"/hat-client /usr/bin/hatc
 
 # Create log dir
 mkdir -p /var/log/hatd/
+
+# Create DB file
+[[ -f ${HAT_DB_DIR}/hatdb.pkl ]] || { mkdir -p "${HAT_DB_DIR}" && : >"${HAT_DB_DIR}"/hatdb.pkl ;}
 
 # Copying the logrotate file
 cp "${HAT_DIR}"/system/hat-daemon /etc/logrotate.d/
