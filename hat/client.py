@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import re
 import shlex
 import subprocess
 import sys
@@ -118,10 +117,8 @@ def json_to_table_print(json_str):
     '''Takes a str (e.g. from `json_dumps`)
     and converts to a table for printing.
     '''
-    # re.sub is to replace the nested double quotes, for `json.loads`
-    data = json.loads(re.sub(
-        r'("command":\s+")[^"]+"([^"]+)"(",?)', r'\1\2\3',
-        json_str.replace('\\', '')))
+    # Needs raw str to keep \" as-is
+    data = json.loads(r'{}'.format(json_str))
     if data:
         # Header
         to_print = '\t\t'.join(('ID', 'Time', 'Shell', 'Command'))
