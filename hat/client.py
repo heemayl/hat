@@ -120,7 +120,7 @@ def json_to_table_print(json_str):
     '''
     # re.sub is to replace the nested double quotes, for `json.loads`
     data = json.loads(re.sub(
-        r'("command":\s+")[^"]+"([^"]+)"(",)', r'\1\2\3',
+        r'("command":\s+")[^"]+"([^"]+)"(",?)', r'\1\2\3',
         json_str.replace('\\', '')))
     if data:
         # Header
