@@ -28,51 +28,30 @@ Benefits of `hat`:
 ## Example workflow:
 
 ```bash
+
 % hatc -l
-[]
+Job queue is empty
 
 % hatc -c
 0
 
-% hatc --add free 'tomorrow 15:47:57'
+% hatc --add free 'now + 5 min'
+{'msg': 'Done'}
 
 % hatc -l
-[
-    [
-        "1",
-	{
-	    "command": "free",
-	    "job_run_at": 1518040077,
-	    "use_shell": false
-	}
-    ]
-]
+ID		    Time		Shell		Command
+1	    2018-02-08T16:47:29		  -		free
 
 % hatc -c
 1
 
-% hatc -a 'echo $PATH' 'now + 3 mins' bash
+% hatc -a 'echo $PATH' 'tomorrow 14:40:30' bash
 {'msg': 'Done'}
 
 % hatc -l
-[
-    [
-        "1",
-	{
-	    "command": "free",
-	    "job_run_at": 1518040077,
-	    "use_shell": false
-	}
-    ],
-    [
-        "2",
-	{
-	    "command": "bash -c \"echo $PATH\"",
-	    "job_run_at": 1517999620,
-	    "use_shell": "bash"
-	}
-    ]
-]
+ID		    Time		Shell		Command
+1	    2018-02-08T16:47:29		  -		free
+2	    2018-02-09T14:40:30		bash		echo $PATH
 
 % hatc -c
 2
@@ -81,16 +60,8 @@ Benefits of `hat`:
 {'msg': 'Queued'}
 
 % hatc -l
-[
-    [
-        "2",
-        {
-            "command": "bash -c \"echo $PATH\"",
-	    "job_run_at": 1517999620,
-	    "use_shell": "bash"
-	}
-    ]
-]
+ID		    Time		Shell		Command
+2           2018-02-09T14:40:30		bash		echo $PATH
 
 % hatc -c
 1

@@ -1,7 +1,9 @@
 '''The client.'''
 
 import argparse
+import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -110,7 +112,33 @@ def check_daemon_process(pid_file):
     if not ret or b'hat/daemon_front.py' in proc.communicate()[0]:
         return True
     return False
-    
+
+
+def json_to_table_print(json_str):
+    '''Takes a str (e.g. from `json_dumps`)
+    and converts to a table for printing.
+    '''
+    # re.sub is to replace the nested double quotes, for `json.loads`
+    data = json.loads(re.sub(
+        r'("command":\s+")[^"]+"([^"]+)"(",)', r'\1\2\3',
+        json_str.replace('\\', '')))
+    if data:
+        # Header
+        to_print = '\t\t'.join(('ID', 'Time', 'Shell', 'Command'))
+        # Sorting list according to the Epoch, then ID
+        data.sort(key=lambda x: (x[1]['job_run_at'], x[0]))
+        for job in data:
+            job_id = job[0]
+            command = job[1]['command']
+            shell = job[1]['use_shell'] or '  -'
+            time_ = time.strftime('%Y-%m-%dT%H:%M:%S',
+                                  time.localtime(job[1]['job_run_at']))
+            to_print = '{}\n{}'.format(to_print,
+                                       '\t'.join((job_id, time_, shell,
+                                                  '\t{}'.format(command))))
+        return to_print
+    return 'Job queue is empty'
+
     
 class SendReceiveData:
     '''Takes and parses input, based on key creates and
@@ -221,7 +249,10 @@ def main():
     data.check_get_send()
     received = data.receive_from_daemon()
     if received is not None:
-        print(received)
+        if not isinstance(received, str):
+            print(received)
+        else:
+            print(json_to_table_print(received))
 
         
 if __name__ == '__main__':
