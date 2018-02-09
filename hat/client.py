@@ -42,15 +42,36 @@ def parse_arguments():
     '''Parse arguments (for client) and
     return appropriate response back.
     '''
+    # Manual formatter class to make `nargs='+'` show one arg
+    class ManualFormatter(argparse.RawTextHelpFormatter):
+        def _format_args(self, action, default_metavar):
+            get_metavar = self._metavar_formatter(action, default_metavar)
+            if action.nargs is None:
+                result = '%s' % get_metavar(1)
+            elif action.nargs == argparse.OPTIONAL:
+                result = '[%s]' % get_metavar(1)
+            elif action.nargs == argparse.ZERO_OR_MORE:
+                result = '[%s [%s ...]]' % get_metavar(2)
+            # Here...
+            elif action.nargs == argparse.ONE_OR_MORE:
+                result = '%s' % get_metavar(1)
+            elif action.nargs == argparse.REMAINDER:
+                result = '...'
+            elif action.nargs == argparse.PARSER:
+                result = '%s ...' % get_metavar(1)
+            else:
+                formats = ['%s' for _ in range(action.nargs)]
+                result = ' '.join(formats) % get_metavar(action.nargs)
+            return result
+
     parser = argparse.ArgumentParser(prog='hatc', description='hat client',
-                                     formatter_class=argparse.
-                                     RawTextHelpFormatter)
+                                     formatter_class=ManualFormatter)
     parser.add_argument('-l', '--list', dest='joblist',
                         required=False, action='store_true',
                         help='Show the list of queued jobs for current user\n')
     parser.add_argument('-c', '--count', dest='jobcount',
                         required=False, action='store_true',
-                        help='Show the number of queued jobs for current user\n')
+                        help='Show the number of queued jobs for current user\n\n')
     parser.add_argument('-a', '--add', dest='add_job',
                         metavar='<command> <datetime_spec> [<shell>]', nargs='+',
                         required=False, help="""Add a new job. If shell is specified, the job will be run in the given shell, otherwise no shell will be used. Example:
@@ -67,7 +88,8 @@ def parse_arguments():
     )
     parser.add_argument('-m', '--modify', dest='modify_job',
                         metavar='<job_id> <command> <datetime_spec> [<shell>]', nargs='+',
-                        required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`). `_` can be used as a placeholder for using an already saved value for an argument (except <job_id>). If <shell> is used, <command> must be specified explicitly. Example:
+                        required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`). `_` can be used as a placeholder for using an
+already saved value for an argument (except <job_id>). If <shell> is used, <command> must be specified explicitly. Example:
 
         hatc --modify 2 'free -g' 'now + 30 min'  # Everything is updated for Job with ID 2
         hatc -m 31 _ 'tomorrow at 14:30'  # The command is kept as original, only time is updated
@@ -77,7 +99,7 @@ def parse_arguments():
         """
     )
     parser.add_argument('-r', '--remove', dest='remove_job',
-                        metavar='<JOB_ID>', nargs='+',
+                        metavar='<job_id> [<job_id> ...]', nargs='+',
                         required=False, help="""Remove queued job(s) by Job ID. Example:
 
         hatc --remove 12

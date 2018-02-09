@@ -8,4 +8,4 @@ logs/*
 *.lock*
 *.pkl
 hatd.pid
-test_run.py
+

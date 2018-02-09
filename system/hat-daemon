@@ -1,3 +1,5 @@
+# logrotate conf file for hatd
+
 /var/log/hatd/*.log {
 	weekly
 	maxsize 10M

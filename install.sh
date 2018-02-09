@@ -11,14 +11,13 @@ HAT_DIR='/usr/lib/hatd'
 HAT_DB_DIR='/var/lib/hatd'
 mkdir -p "${HAT_DIR}"
 
-# Copy everything to `$HAT_DIR`
-GLOBIGNORE='install.sh'
-cp -aRt "${HAT_DIR}" *
+# Copy required stuffs to `$HAT_DIR`
+cp -aRt "${HAT_DIR}" ./{hat{,d,-client},env_base.sh}
 
 # Put Systemd file for the daemon in relevant place.
 # If this gives an error regarding wrong/absent destination directory,
 # please put the file manually in your distro-advised place
-cp "${HAT_DIR}"/system/hat-daemon.service /etc/systemd/system/
+cp system/hat-daemon.service /etc/systemd/system/
 
 # Create symlink for the client
 ln -sf "${HAT_DIR}"/hat-client /usr/bin/hatc
@@ -30,7 +29,7 @@ mkdir -p /var/log/hatd/
 [[ -f ${HAT_DB_DIR}/hatdb.pkl ]] || { mkdir -p "${HAT_DB_DIR}" && : >"${HAT_DB_DIR}"/hatdb.pkl ;}
 
 # Copying the logrotate file
-cp "${HAT_DIR}"/system/hat-daemon /etc/logrotate.d/
+cp system/hat-daemon /etc/logrotate.d/
 
 # Create `hatd` group and set SETGID on `/var/run/hatd/locks/`
 addgroup hatd
@@ -51,3 +50,16 @@ systemctl daemon-reload
 systemctl enable hat-daemon.service && \
     systemctl start hatd.service && { printf '%s\n' "${msgs[@]}" || printf '%s\n' "Installation Failed!" ;}
 
+
+#
+# To uninstall (as superuser):
+#
+# 1. Stop the dameon and remove init file:
+#        systemctl stop hatd.service && \
+#        rm /etc/systemd/system/hat-daemon.service && \
+#        systemctl daemon-reload
+# 2. Remove other files and directories:
+#        rm -r /var/lib/hatd/ /var/run/hatd/ /usr/lib/hatd/ /etc/logrotate.d/hat-daemon
+#
+# N.B: If you want to keep the enqueued jobs, don't remove `/var/lib/hatd/`, precisely `/var/lib/hatd/hatdb.pkl`.
+#
