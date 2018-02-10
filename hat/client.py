@@ -64,33 +64,35 @@ def parse_arguments():
                 result = ' '.join(formats) % get_metavar(action.nargs)
             return result
 
-    parser = argparse.ArgumentParser(prog='hatc', description='hat client',
+    parser = argparse.ArgumentParser(prog='hatc', description='HAT client – a client for HAT (Hyper-AT), the one-time scheduler for GNU/Linux.',
                                      formatter_class=ManualFormatter)
     parser.add_argument('-l', '--list', dest='joblist',
                         required=False, action='store_true',
-                        help='Show the list of queued jobs for current user\n')
+                        help='Show the list of queued jobs.\n')
     parser.add_argument('-c', '--count', dest='jobcount',
                         required=False, action='store_true',
-                        help='Show the number of queued jobs for current user\n\n')
+                        help='Show the number of queued jobs.\n\n')
     parser.add_argument('-a', '--add', dest='add_job',
                         metavar='<command> <datetime_spec> [<shell>]', nargs='+',
-                        required=False, help="""Add a new job. If shell is specified, the job will be run in the given shell, otherwise no shell will be used. Example:
-
+                        required=False, help="""Add a new job. If shell is specified, the job will be run in the given shell,
+otherwise no shell will be used.
+Examples:
         hatc --add 'free -m' 'now + 30 min'
         hatc -a 'tail -10 /var/log/syslog' 'tomorrow at 14:30'
         hatc -a 'func() { echo Test ;}; func()' 'next sunday 11' bash
         hatc -a 'echo $PATH' 'today 18:06:34' dash
         hatc -a date 'tomorrow 10 - 6 hr 12 min 3 sec'
 
-        More on <datetime_spec>: https://github.com/heemayl/humantime-epoch-converter
-        Job's STDOUT, STDERR will be logged in `~/.hatd/logs/{stdout,stderr}.log`, respectively.
+More on <datetime_spec>: https://github.com/heemayl/humantime-epoch-converter
+The job's STDOUT and STDERR are logged in `~/.hatd/logs/{stdout,stderr}.log`, respectively.
         """
     )
     parser.add_argument('-m', '--modify', dest='modify_job',
                         metavar='<job_id> <command> <datetime_spec> [<shell>]', nargs='+',
-                        required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`). `_` can be used as a placeholder for using an
-already saved value for an argument (except <job_id>). If <shell> is used, <command> must be specified explicitly. Example:
-
+                        required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`).
+`_` can be used as a placeholder for using an already saved value for an argument (except <job_id>).
+If <shell> is used, <command> must be specified explicitly.
+Examples:
         hatc --modify 2 'free -g' 'now + 30 min'  # Everything is updated for Job with ID 2
         hatc -m 31 _ 'tomorrow at 14:30'  # The command is kept as original, only time is updated
         hatc -m 4 'func() { echo Test ;}; func()' _  # Only command is updated
@@ -100,8 +102,8 @@ already saved value for an argument (except <job_id>). If <shell> is used, <comm
     )
     parser.add_argument('-r', '--remove', dest='remove_job',
                         metavar='<job_id> [<job_id> ...]', nargs='+',
-                        required=False, help="""Remove queued job(s) by Job ID. Example:
-
+                        required=False, help="""Remove queued job(s) by Job ID.
+Examples:
         hatc --remove 12
         hatc -r 3 8 23
         """
