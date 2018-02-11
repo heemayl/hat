@@ -98,7 +98,8 @@ class JobMeta(ABCMeta):
 
 class Job(metaclass=JobMeta):
     '''A job to be done at specified time.'''
-    def __init__(self, euid, command, time_, use_shell=False, job_id=None):
+    def __init__(self, euid, exact, command, time_, use_shell=False,
+                 job_id=None):
         self.euid = int(euid)
         # Checking Permission
         # _check_perm(self.euid)
@@ -106,6 +107,8 @@ class Job(metaclass=JobMeta):
         if job_id:
             job = enqueued_jobs[self.euid][job_id]
             self.job_id = job_id
+            # Hmmm...future thinking scope
+            self.exact = exact
             self.command = job['command'] if command == '_' \
                 else command
             if time_ == '_':
@@ -118,12 +121,13 @@ class Job(metaclass=JobMeta):
         else:
             self.command = command
             self.use_shell = use_shell
+            self.exact = exact
             self.time_str = time_
             self.date_time_epoch = self.get_run_at_epoch()
             # Saving the job, with the user's EUID as keys, and increasing
             # IDs as subdict keys with command, time, use_shell as values
             self.job_id = self._get_job_id()
-
+            
         if not self.date_time_epoch:
             return
         enqueued_jobs[self.euid].update({
@@ -131,6 +135,7 @@ class Job(metaclass=JobMeta):
                 'command': self.command,
                 'job_run_at': int(self.date_time_epoch),  # to int
                 'use_shell': self.use_shell,
+                'exact': self.exact,
             }
         })
         
