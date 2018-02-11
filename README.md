@@ -7,6 +7,7 @@ Benefits of `hat`:
 - Job modification is supported; you can easily modify command, time of an enqueued job
 - Flexible datetime specifications, see https://github.com/heemayl/humantime-epoch-converter
 - Will run a scheduled job later when the computer was off at that time, so no job will be missed
+- Option for running a job at the specified time only e.g. if the computer was off at that time, job will not be run
 - User specific jobs, secured approach
 - User based logging, all logs from jobs of a user go in `~/.hatd/logs/`
 - All-in-one i.e. no separate tool based on job or pattern
@@ -105,6 +106,43 @@ ID		    Time	       Shell		Command
 % hatc -l
 ID     		    Time	       Shell		Command
 1 	    2018-02-09T14:30:42		 -		free -m
+
+
+```
+
+Now, option for running a job at only at the specified time is available. By default, a job is will be run later if e.g. the computer was off at the desired run time; `-e`/`--exact` option disables this behavior:
+
+```bash
+
+% hatc -l
+Job queue is empty
+
+# Adding job with `--exact`
+% hatc --exact --add 'free -g' 'now+1h3m40s'
+{'msg': 'Done'}
+
+# Check out the third column
+% hatc -l
+ID	        Time		        Exact		Shell		Command
+1	2018-02-12T03:13:44		 Yes	          -		free -g
+
+# Let's disable exact by modifying the job without `-e`/`--exact`
+% hatc -m 1 _ _
+{'msg': 'Done'}
+
+# exact is disabled
+% hatc -l
+ID	        Time		        Exact		Shell		Command
+1	2018-02-12T03:13:44		 No	          -		free -g
+
+# Enable exact again
+% hatc -e -m 1 _ _
+{'msg': 'Done'}
+
+# Enabled again
+% hatc -l
+ID	        Time		        Exact		Shell		Command
+1	2018-02-12T03:13:44		 Yes	          -		free -g
 
 
 ```
