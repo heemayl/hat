@@ -69,17 +69,18 @@ class BaseRunner(metaclass=BaseRunnerMeta):
             while True:
                 if not self._running:
                     break
-                to_remove = []
+                to_remove = set()
                 for line in fifo_in:
                     try:
                         content = json.loads(line.strip())
                     except json.JSONDecodeError as e:
                         write_file(self.daemon_log, str(e), mode='at')
                     else:
-                        if 3 <= len(content) <= 5:
+                        if 4 <= len(content) <= 6:
                             try:
                                 Job(
                                     int(content['euid']),
+                                    content['exact'],
                                     content['command'],
                                     content['time_'],
                                     content.get('use_shell', False),
@@ -121,12 +122,18 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                             # {'remove': [(euid, job_id), ...]}
                             elif 'remove' in content:
                                 for euid, job_id in content['remove']:
-                                    to_remove.append((euid, int(job_id)))
+                                    to_remove.add((euid, int(job_id)))
                 _jobs = self._joblist_raw(-1)
                 if _jobs:
                     for euid, job_dict in _jobs.items():
                         for job_id, job in job_dict.items():
-                            if job['job_run_at'] <= int(time.time()):
+                            job_run_at = job['job_run_at']
+                            current_time = int(time.time())
+                            # Considering 1 sec margin for load etc.
+                            if (job_run_at in {current_time - 1,
+                                               current_time}) or (
+                                   job_run_at < current_time
+                                   and not job['exact']):
                                 multiprocessing.Process(
                                     target=self.command_run_save,
                                     args=(job['command'],),
@@ -144,7 +151,9 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                                         'run_at': job['job_run_at'],
                                     },
                                 ).start()
-                                to_remove.append((euid, job_id))
+                                to_remove.add((euid, job_id))
+                            if (job_run_at < current_time) and job['exact']:
+                                to_remove.add((euid, job_id))
                 if to_remove:
                     for euid, job_id in to_remove:
                         remove_job(euid, job_id)

@@ -72,6 +72,9 @@ def parse_arguments():
     parser.add_argument('-c', '--count', dest='jobcount',
                         required=False, action='store_true',
                         help='Show the number of queued jobs.\n\n')
+    parser.add_argument('-e', '--exact', dest='exact',
+                        required=False, action='store_true',
+                        help='Run the job only at the time specified, not after. By default, a job is will be run later if e.g. the computer was off at the desired run time.\n\n')
     parser.add_argument('-a', '--add', dest='add_job',
                         metavar='<command> <datetime_spec> [<shell>]', nargs='+',
                         required=False, help="""Add a new job. If shell is specified, the job will be run in the given shell,
@@ -91,13 +94,14 @@ The job's STDOUT and STDERR are logged in `~/.hatd/logs/{stdout,stderr}.log`, re
                         metavar='<job_id> <command> <datetime_spec> [<shell>]', nargs='+',
                         required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`).
 `_` can be used as a placeholder for using an already saved value for an argument (except <job_id>).
-If <shell> is used, <command> must be specified explicitly.
+If <shell> is used, <command> must be specified explicitly. The `-e`/`--exact` argument must be specified explictly too.
 Examples:
         hatc --modify 2 'free -g' 'now + 30 min'  # Everything is updated for Job with ID 2
         hatc -m 31 _ 'tomorrow at 14:30'  # The command is kept as original, only time is updated
         hatc -m 4 'func() { echo Test ;}; func()' _  # Only command is updated
         hatc -m 23 'echo $PATH' 'today 18:06:34' dash  # Everything is updated
         hatc --modify 78 _ 'tomorrow 10 - 6 hr 12 min 3 sec'  # Only time is updated
+        hatc --exact -m 2 _ _  # Making the job to run at exact time, not anytime after; keeping command/time specifications as-is
         """
     )
     parser.add_argument('-r', '--remove', dest='remove_job',
@@ -117,17 +121,18 @@ Examples:
 def argument_serializer(args_dict):
     '''Checks the argument dict, and returns the args
     as a sequence after passing them through decision logic.
-    '''    
+    '''
+    exact = args_dict.get('exact', False)
     if not any(args_dict.values()) or args_dict.get('joblist'):
         return ('joblist',)
     elif args_dict.get('jobcount'):
         return ('jobcount',)
     elif args_dict.get('add_job'):
-        return ('add_job', *args_dict.get('add_job'))
+        return ('add_job', *([exact] + args_dict.get('add_job')))
     elif args_dict.get('modify_job'):
-        return ('modify_job', *args_dict.get('modify_job'))
+        return ('modify_job', *([exact] + args_dict.get('modify_job')))
     elif args_dict.get('remove_job'):
-        return ('remove_job', *args_dict.get('remove_job'))
+        return ('remove_job', *([exact] + args_dict.get('remove_job')))
     return
 
 
@@ -204,40 +209,43 @@ class SendReceiveData:
         self.send_to_daemon()
         
     def add_job_fmt(self, data):
-        if not (2 <= len(data) <= 3):
+        if not (3 <= len(data) <= 4):
             raise HatClientException('Ambiguous input')
-        command = '{} -c "{}"'.format(data[2], data[0]) if len(data) == 3 \
-                  else data[0]
+        exact = data[0]
+        command = '{} -c "{}"'.format(data[3], data[1]) if len(data) == 4 \
+                  else data[1]
         time_ = time.strftime('%Y-%m-%d_%H:%M:%S',
-                              time.localtime(get_epoch_main(data[1])))
-        
+                              time.localtime(get_epoch_main(data[2])))
         self.out_dict = {
             'add_job': {
                 'euid': os.geteuid(),
+                'exact': exact,
                 'command': command,
                 'time_': time_,
-                'use_shell': data[2] if len(data) == 3 else False
+                'use_shell': data[3] if len(data) == 4 else False
             }
         }
 
     def modify_job_fmt(self, data):
-        if not (3 <= len(data) <= 4):
+        if not (4 <= len(data) <= 5):
             raise HatClientException('Ambiguous input')
         try:
-            job_id = int(data[0])
+            job_id = int(data[1])
         except ValueError:
             raise HatClientException('Ambiguous input')
-        command = '{} -c "{}"'.format(data[3], data[1]) if len(data) == 4 \
-                  else data[1]
-        time_ = data[2] if data[2] == '_' else time.strftime(
+        exact = data[0]
+        command = '{} -c "{}"'.format(data[4], data[2]) if len(data) == 5 \
+                  else data[2]
+        time_ = data[3] if data[3] == '_' else time.strftime(
             '%Y-%m-%d_%H:%M:%S',
-            time.localtime(get_epoch_main(data[2])))
+            time.localtime(get_epoch_main(data[3])))
         self.out_dict = {
             'add_job': {
                 'euid': os.geteuid(),
+                'exact': exact,
                 'command': command,
                 'time_': time_,
-                'use_shell': data[3] if len(data) == 4 else False,
+                'use_shell': data[4] if len(data) == 5 else False,
                 'job_id': job_id
             }
         }
