@@ -23,11 +23,11 @@ class DateTime:
     to Python datetime object and converts that into Epoch eventually.
     '''
     def __init__(self, str_dt):
-        self.str_dt = re.sub(r'([+-]\s+\d+)([a-z]+)',
-                             r'\1 \2', str_dt.lower().strip().strip(':')
-                             .replace('+', ' + ')
-                             .replace('-', ' - ')
-                             )
+        self.str_dt = ' '.join(re.split(r'(\d+)([a-z]+)',
+                                        str_dt.lower().strip().strip(':')
+                                        .replace('+', ' + ')
+                                        .replace('-', ' - ')
+        ))
         self.list_dt = self.str_dt.split()
         
     def check_get(self):
@@ -182,11 +182,11 @@ class DateTime:
         '''Adds hr/min/sec to time.'''
         hrs = mins = secs = 0
         for val, name in itertools.zip_longest(after_[::2], after_[1::2]):
-            if name in {'hrs', 'hr', 'hours', 'hour'}:
+            if name in {'hours', 'hour', 'hrs', 'hr', 'h'}:
                 hrs = int(val)
-            elif name in {'minutes', 'minute', 'mins', 'min'}:
+            elif name in {'minutes', 'minute', 'mins', 'min', 'm'}:
                 mins = int(val)
-            elif name in {'seconds', 'second', 'secs', 'sec', None}:
+            elif name in {'seconds', 'second', 'secs', 'sec', 's', None}:
                 secs = int(val)
             else:
                 raise DateTimeException('Ambiguous input: {}'
