@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # The client for the hat-daemon. This is just
-# a wrapper around client.py, passes the
-# argumemts as-is to client.py
+# a wrapper around client.py that passes the
+# arguments as-is to client.py.
 
 # sourcing env_base
 . /usr/lib/hatd/env_base.sh
