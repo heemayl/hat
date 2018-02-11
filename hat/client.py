@@ -81,10 +81,12 @@ def parse_arguments():
 otherwise no shell will be used.
 Examples:
         hatc --add 'free -m' 'now + 30 min'
+        hatc --add 'free -g' 'now+1h40m30s'
         hatc -a 'tail -10 /var/log/syslog' 'tomorrow at 14:30'
         hatc -a 'func() { echo Test ;}; func()' 'next sunday 11' bash
         hatc -a 'echo $PATH' 'today 18:06:34' dash
         hatc -a date 'tomorrow 10 - 6 hr 12 min 3 sec'
+        hatc -e -a 'free -g' 'now+1h' sh  # Making the job exact, see `-e`/`--exact`
 
 More on <datetime_spec>: https://github.com/heemayl/humantime-epoch-converter
 The job's STDOUT and STDERR are logged in `~/.hatd/logs/{stdout,stderr}.log`, respectively.
@@ -94,7 +96,7 @@ The job's STDOUT and STDERR are logged in `~/.hatd/logs/{stdout,stderr}.log`, re
                         metavar='<job_id> <command> <datetime_spec> [<shell>]', nargs='+',
                         required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`).
 `_` can be used as a placeholder for using an already saved value for an argument (except <job_id>).
-If <shell> is used, <command> must be specified explicitly. The `-e`/`--exact` argument must be specified explicitly too.
+If <shell> is used, <command> must be specified explicitly, and vice versa. The `-e`/`--exact` argument must be specified explicitly too.
 Examples:
         hatc --modify 2 'free -g' 'now + 30 min'  # Everything is updated for Job with ID 2
         hatc -m 31 _ 'tomorrow at 14:30'  # The command is kept as original, only time is updated
@@ -102,6 +104,7 @@ Examples:
         hatc -m 23 'echo $PATH' 'today 18:06:34' dash  # Everything is updated
         hatc --modify 78 _ 'tomorrow 10 - 6 hr 12 min 3 sec'  # Only time is updated
         hatc --exact -m 2 _ _  # Making the job to run at exact time, not anytime after; keeping command/time specifications as-is
+        hatc -m 2 _ _  # Removing the exact option from the previous job, by not using `-e` or `--exact` option
         """
     )
     parser.add_argument('-r', '--remove', dest='remove_job',
@@ -163,7 +166,7 @@ def json_to_table_print(json_str):
     data = json.loads(r'{}'.format(json_str))
     if data:
         # Header
-        to_print = '\t\t'.join(('ID', 'Time', 'Shell', 'Command'))
+        to_print = '\t\t'.join(('ID', 'Time', 'Exact', 'Shell', 'Command'))
         # Sorting list according to the Epoch, then ID
         data.sort(key=lambda x: (x[1]['job_run_at'], x[0]))
         for job in data:
@@ -172,9 +175,12 @@ def json_to_table_print(json_str):
             shell = job[1]['use_shell'] or '  -'
             time_ = time.strftime('%Y-%m-%dT%H:%M:%S',
                                   time.localtime(job[1]['job_run_at']))
+            exact = ' Yes' if job[1]['exact'] else ' No'
             to_print = '{}\n{}'.format(to_print,
-                                       '\t'.join((job_id, time_, shell,
-                                                  '\t{}'.format(command))))
+                                       '\t'.join((job_id, time_, exact,
+                                                  '\t{}'.format(shell),
+                                                  '\t{}'.format(command)
+                                       )))
         return to_print
     return 'Job queue is empty'
 

@@ -6,6 +6,7 @@ import collections
 import datetime
 import os
 import pickle
+import re
 import time
 
 from abc import ABCMeta
@@ -118,6 +119,11 @@ class Job(metaclass=JobMeta):
                 self.date_time_epoch = self.get_run_at_epoch()
             self.use_shell = job['use_shell'] if use_shell == '_' \
                 else use_shell
+            # use_shell is absent: removing shell reference from command
+            if not self.use_shell and not use_shell == '_':
+                self.command = re.sub(r'^\S+\s+-c\s+"(.*)"$', r'\1',
+                                      self.command)
+                
         else:
             self.command = command
             self.use_shell = use_shell
