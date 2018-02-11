@@ -94,7 +94,7 @@ The job's STDOUT and STDERR are logged in `~/.hatd/logs/{stdout,stderr}.log`, re
                         metavar='<job_id> <command> <datetime_spec> [<shell>]', nargs='+',
                         required=False, help="""Modify an enqueued job. The first argument must be the job ID (from `hatc -l`).
 `_` can be used as a placeholder for using an already saved value for an argument (except <job_id>).
-If <shell> is used, <command> must be specified explicitly. The `-e`/`--exact` argument must be specified explictly too.
+If <shell> is used, <command> must be specified explicitly. The `-e`/`--exact` argument must be specified explicitly too.
 Examples:
         hatc --modify 2 'free -g' 'now + 30 min'  # Everything is updated for Job with ID 2
         hatc -m 31 _ 'tomorrow at 14:30'  # The command is kept as original, only time is updated
