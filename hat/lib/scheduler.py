@@ -181,7 +181,9 @@ class Job(metaclass=JobMeta):
                 continue
             else:
                 self.date_time_epoch = time.mktime(self.date_time.timetuple())
-                if self.date_time_epoch < time.time():
+                # Taking a margin of 2 secs so that time
+                # spec like `now` works
+                if self.date_time_epoch < time.time() - 2:
                     raise HatTimerException(
                         'No backward time travel support: {}'
                         .format(self.time_str))

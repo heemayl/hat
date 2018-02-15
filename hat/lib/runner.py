@@ -28,7 +28,7 @@ class BaseRunnerMeta(type):
     
 
 class BaseRunner(metaclass=BaseRunnerMeta):
-    '''The base command runner. This is a singleton.'''    
+    '''The base command runner. This is a singleton.'''
     def __init__(self):
         self.daemon_log = '/var/log/hatd/daemon.log'
         self.fifo_in = '/var/run/hatd/ipc/runner_in.fifo'
@@ -129,9 +129,9 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                         for job_id, job in job_dict.items():
                             job_run_at = job['job_run_at']
                             current_time = int(time.time())
-                            # Considering 1 sec margin for load etc.
-                            if (job_run_at in {current_time - 1,
-                                               current_time}) or (
+                            # Considering 2 secs margin for load etc.
+                            if (current_time - 2 <= job_run_at <=
+                                current_time) or (
                                    job_run_at < current_time
                                    and not job['exact']):
                                 multiprocessing.Process(
