@@ -1,0 +1,200 @@
+.TH HATC 1 2018-02-25
+.SH NAME
+hatc \- queue, modify, remove jobs/tasks for later execution
+.SH SYNOPSIS
+.B hatc
+.RB -V
+.br
+.B hatc
+.RB -l
+.br
+.B hatc
+.RB -c
+.br
+.B hatc
+.RB -a
+.RI [ -e ]
+.IR command
+.IR datetime
+.RI [ shell ] 
+.br
+.B hatc
+.RB -m
+.RI [ -e ]
+.IR job-ID
+.RI [ command ]
+.RI [ datetime ]
+.RI [ shell ]
+.br
+.B hatc
+.RB -r
+.IR job-ID
+.RI [ job-ID... ]
+.br
+
+.SH DESCRIPTION
+.B HAT (Hyper-AT)
+is an one time run job scheduler, with an emphasis on usability.
+It is designed to be a direct replacement of all one time run task
+scheduling engines/toolsets, with a much better, usable interface,
+with enhanced features.
+.B hatc
+is the userspace tool to communicate with
+.B hatd
+-- the daemon.
+.TP 8
+Some of the features of \fBhatc\fR:
+.br
+.IR 1.
+Time resolution of seconds i.e. it is possible to run job at the mentioned second
+.br
+.IR 2.
+Running job on the shell of choice; no binding to `/bin/sh`
+.br
+.IR 3.
+Job modification is supported; one can easily modify command, time of an enqueued job
+.br
+.IR 4.
+Flexible datetime specifications, see
+.IR https://github.com/heemayl/humantime-epoch-converter
+.br
+.IR 5.
+Will run a scheduled job later when the computer was off at that time, so no job will be missed
+.br
+.IR 6.
+Option for running a job at the specified time only e.g. if the computer was off at that time, job will not be run
+.br
+.IR 7.
+User specific jobs, no user can see other users' jobs
+.br
+.IR 8.
+- User based logging, all logs from jobs of a user go in `~/.hatd/logs/`
+.br
+.IR 9.
+Easy to use
+.br
+
+.PP
+.SH OPTIONS
+.TP 8
+\fB\-V\fR, \fB\-\-version\fR
+print the version number to standard error and exit.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show this help message and exit.
+.TP
+\fB\-l\fR, \fB\-\-list\fR
+show the list of queued jobs.
+.TP
+\fB\-c\fR, \fB\-\-count\fR
+show the number of queued jobs.
+.TP
+\fB\-e\fR, \fB\-\-exact\fR
+run the job only at the time specified, not after. By default, a job is will be run
+later if e.g. the computer was off at the desired run time.
+.TP
+\fB\-a\fR command datetime [shell], \fB\-\-add\fR command datetime [shell]
+Add a new job. If \fBshell\fR is specified, the job will be run in the given shell,
+otherwise no shell will be used.
+.br
+See \fBDATETIME SPEC\fR below for datetime specifications. Also, check out the \fBEXAMPLES\fR
+section.
+.TP
+\fB\-m\fR job-ID [command] [datetime] [shell], \fB\-\-modify\fR job-ID [command] [datetime] [shell]
+Modify an enqueued job. The first argument must be the job ID (from \fBhatc -l\fR).
+.br
+`_` can be used as a placeholder for using an already saved value for an argument
+(except \fBjob-ID\fR).
+.br
+If \fBshell\fR is used, \fBcommand\fR must be specified explicitly,
+and vice versa. The \fB-e\fR/\fB--exact\fR argument must be specified explicitly too.
+.br
+See \fBDATETIME SPEC\fR below for datetime specifications. Also, check out the \fBEXAMPLES\fR
+section.
+.TP
+\fB\-r\fR job-ID [job-ID ...], \fB\-\-remove\fR job-ID [job-ID ...]
+Remove enqueued job(s) by Job ID. For removing multiple jobs, separate job-IDs by space.
+.br
+Check out the \fBEXAMPLES\fR section below.
+
+
+.SH DATETIME SPEC
+\fBhatc\fR supports fairly advanced datetime specifications. For a detail spec, please see
+.IR https://github.com/heemayl/humantime-epoch-converter
+.TP
+Here are a few example specs:
+.br
+yesterday
+.br
+today at 6:50
+.br
+tomorrow 16:40 + 2 hr
+.br
+next sunday 23
+.br
+next tuesday at 21:22:32
+.br
+next wed at 2:30 + 48min 21secs
+.br
+now
+.br
+now + 1 hr 2 min 3 sec
+.br
+now+32hr2m30s
+.br
+tomorrow 9 - 1hour30min21s
+.br
+now+21h30m
+.br
+
+.SH EXAMPLES
+
+
+.SH FILES
+.I /var/spool/cron/atjobs
+.br
+.I /var/spool/cron/atspool
+.br
+.I /proc/loadavg
+.br
+.I /var/run/utmp
+.br
+.I /etc/at.allow
+.br
+.I /etc/at.deny
+.SH SEE ALSO
+.BR at.allow (5),
+.BR at.deny (5),
+.BR atd (8),
+.BR cron (1),
+.BR nice (1),
+.BR sh (1),
+.BR umask (2).
+.SH BUGS
+The correct operation of
+.B batch
+for Linux depends on the presence of a
+.IR proc -
+type directory mounted on
+.IR /proc .
+.PP
+If the file
+.I /var/run/utmp
+is not available or corrupted, or if the user is not logged on at the
+time
+.B at
+is invoked, the mail is sent to the userid found
+in the environment variable
+.BR LOGNAME .
+If that is undefined or empty, the current userid is assumed.
+.PP
+.B At
+and
+.B batch
+as presently implemented are not suitable when users are competing for
+resources.
+If this is the case for your site, you might want to consider another
+batch system, such as
+.BR nqs .
+.SH AUTHOR
+At was mostly written by Thomas Koenig, ig25@rz.uni-karlsruhe.de.
