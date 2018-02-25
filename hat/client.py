@@ -14,6 +14,8 @@ from lib.utils import print_msg, read_file, write_file, username_from_euid
 from lib.humantime_epoch_converter import main as get_epoch_main
 
 
+__version__ = '0.1'
+
 DAEMON_IN = '/var/run/hatd/ipc/daemon_in.fifo'
 DAEMON_OUT = '/var/run/hatd/ipc/daemon_out.fifo'
 DAEMON_PID_FILE = '/var/run/hatd/hatd.pid'
@@ -306,7 +308,9 @@ def main():
             data_seq = ('stop_daemon', True)
             data = SendReceiveData(data_seq)
             data.check_get_send()
-            exit(0)
+        if sys.argv[1] in {'-V', '--version'}:
+            print_msg(__version__, file=sys.stderr)
+        exit(0)
     if not check_daemon_process(DAEMON_PID_FILE):
         print_msg('Daemon (hatd) is not running')
         exit(127)

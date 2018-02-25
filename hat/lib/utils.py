@@ -5,6 +5,7 @@ import fcntl
 import logging
 import json
 import os
+import sys
 import time
 
 
@@ -34,9 +35,9 @@ class FLock:
         self.lockf.close()
         
 
-def print_msg(msg, flush_stream=True):
+def print_msg(msg, flush_stream=True, file=sys.stdout):
     '''Wrapper for formatting-printing.'''
-    print('\n{}\n'.format(msg), end='\n', flush=flush_stream)
+    print('\n{}\n'.format(msg), end='\n', flush=flush_stream, file=file)
     return
 
 
