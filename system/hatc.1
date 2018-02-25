@@ -1,3 +1,4 @@
+.\" Man page of hatc -- The hatd client
 .TH HATC 1 "25 February, 2018" "HAT (Hyper-AT)"
 .SH NAME
 hatc \- queue, modify, remove jobs/tasks for executing at a later time
@@ -36,8 +37,8 @@ hatc \- queue, modify, remove jobs/tasks for executing at a later time
 .B HAT (Hyper-AT)
 is an one time run job scheduler, with an emphasis on usability.
 It is designed to be a direct replacement of all one time run task
-scheduling engines/toolsets, with a much better, usable interface,
-with enhanced features.
+scheduling engines/toolsets, with a much better, usable interface
+and enhanced features.
 .B hatc
 is the userspace tool to communicate with
 .B hatd
@@ -46,20 +47,19 @@ is the userspace tool to communicate with
 Some of the features of \fBhatc\fR:
 .br
 .IR 1.
-Time resolution of seconds i.e. it is possible to run job at the mentioned second
+Time resolution of seconds i.e. it is possible to run jobs at the mentioned second
 .br
 .IR 2.
-Running job on the shell of choice; no binding to `/bin/sh`
+Run job on the shell of choice; no binding to `/bin/sh`
 .br
 .IR 3.
 Job modification is supported; one can easily modify command, time of an enqueued job
 .br
 .IR 4.
-Flexible datetime specifications, see
-.IR https://github.com/heemayl/humantime-epoch-converter
+Flexible datetime specifications, see \fBDATETIME SPEC\fR section below
 .br
 .IR 5.
-Will run a scheduled job later when the computer was off at that time, so no job will be missed
+Will run a scheduled job later when the computer was off at that time, so no job will be missed. Also see point 6
 .br
 .IR 6.
 Option for running a job at the specified time only e.g. if the computer was off at that time, job will not be run

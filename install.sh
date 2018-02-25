@@ -31,6 +31,9 @@ mkdir -p /var/log/hatd/
 # Copying the logrotate file
 cp system/hat-daemon /etc/logrotate.d/
 
+# Copying and gzip-ing man page
+gzip --to-stdout system/hatc.1 >/usr/share/man/man1/hatc.1.gz
+
 # Create `hatd` group and set SETGID on `/var/run/hatd/locks/`
 addgroup hatd
 mkdir -p /var/run/hatd/locks
@@ -59,7 +62,7 @@ systemctl enable hat-daemon.service && \
 #        rm /etc/systemd/system/hat-daemon.service && \
 #        systemctl daemon-reload
 # 2. Remove other files and directories:
-#        rm -r /var/lib/hatd/ /var/run/hatd/ /usr/lib/hatd/ /etc/logrotate.d/hat-daemon
+#        rm -r /var/lib/hatd/ /var/run/hatd/ /usr/lib/hatd/ /etc/logrotate.d/hat-daemon /usr/share/man/man1/hatc.1.gz
 #
 # N.B: If you want to keep the enqueued jobs, don't remove `/var/lib/hatd/`, precisely `/var/lib/hatd/hatdb.pkl`.
 #
