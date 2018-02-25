@@ -175,14 +175,14 @@ class BaseRunner(metaclass=BaseRunnerMeta):
             if f:
                 os.makedirs(os.path.dirname(f), exist_ok=True)
 
-        returncode, stdout, stderr = self.run_command(command, use_shell,
+        returncode, stdout, stderr = self.run_command(command, euid, use_shell,
                                                       job_id)
         self._check_and_write(stdout_file, euid, run_at, job_id, command,
                               returncode, stdout, is_stdout=True)
         self._check_and_write(stderr_file, euid, run_at, job_id, command,
                               returncode, stderr)
 
-    def run_command(self, command, use_shell, job_id):
+    def run_command(self, command, euid, use_shell, job_id):
         '''Runs a command, and returns (exit_status, STDOUT, STDERR) tuple.'''
         try:
             command_ = command if use_shell else shlex.split(command)
@@ -190,7 +190,8 @@ class BaseRunner(metaclass=BaseRunnerMeta):
                 command_,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                shell=use_shell
+                shell=use_shell,
+                preexec_fn=lambda: os.seteuid(int(euid))  # Setting EUID
             )
         except Exception as err:
             # Setting `returncode` to 127
