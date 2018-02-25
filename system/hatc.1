@@ -1,6 +1,6 @@
-.TH HATC 1 2018-02-25
+.TH HATC 1 "25 February, 2018" "HAT (Hyper-AT)"
 .SH NAME
-hatc \- queue, modify, remove jobs/tasks for later execution
+hatc \- queue, modify, remove jobs/tasks for executing at a later time
 .SH SYNOPSIS
 .B hatc
 .RB -V
@@ -148,53 +148,68 @@ now+21h30m
 .br
 
 .SH EXAMPLES
+.TP
+\fBListing and counting jobs:\fR
+.br
+hatc   \fB# List scheduled jobs\fR
+.br
+hatc -l   \fB# List scheduled jobs\fR
+.br
+hatc -c   \fB# Number of jobs scheduled\fR
 
+.TP
+\fBAdding jobs:\fR
+.br
+hatc --add 'free -m' 'now + 30 min'   \fB# Scheduling `free -m` to run after 30 minutes from now\fR
+.br
+hatc --add 'free -g' 'now+1h40m30s'   \fB# `free -g` will run after 1 hour, 40 minutes, 30 seconds from now\fR
+.br
+hatc -a 'tail -10 /var/log/syslog' 'tomorrow at 14:30'   \fB# `tail -10 /var/log/syslog` is scheduled to be run the next day at 02:20 PM\fR
+.br
+hatc -a 'func() { echo Test ;}; func()' 'next sunday 11' bash   \fB# The function `func` will be run on `bash` at next sunday 11:00 AM\fR
+.br
+hatc -a 'echo $PATH' 'today 18:06:34' dash   \fB# `echo $PATH` will be run on shell `dash`, today at 6:06:34 PM\fR
+.br
+hatc -a date 'tomorrow 10 - 6 hr 12 min 3 sec'   \fB# `date` will be run at the time resulting from the subtraction\fR
+.br
+hatc -e -a 'free -g' 'now+1h' sh   \fB# Making the job exact, see `-e`/`--exact` option\fR
+.TP
+\fBModifying jobs:\fR
+.br
+hatc --modify 2 'free -g' 'now + 30 min'   \fB# Everything is updated for Job with ID 2\fR
+.br
+hatc -m 31 _ 'tomorrow at 14:30'   \fB# The command is kept as original, only time is updated\fR
+.br
+hatc -m 4 'func() { echo Test ;}; func()' _   \fB# Only command is updated\fR
+.br
+hatc -m 23 'echo $PATH' 'today 18:06:34' dash   \fB# Everything is updated\fR
+.br
+hatc --modify 78 _ 'tomorrow 10 - 6 hr 12 min 3 sec'   \fB# Only time is updated\fR
+.br
+hatc --exact -m 2 _ _   \fB# Making the job to run at exact time, not anytime after; keeping command/time specifications as-is\fR
+.br
+hatc -m 2 _ _   \fB# Removing the exact option from the previous job, by not using `-e` or `--exact` option\fR
+.TP
+\fBRemoving jobs:\fR
+.br
+hatc --remove 12   \fB# Removing job with Job ID 12\fR
+.br
+hatc -r 3 8 23   \fB# Removing 3 jobs having IDs 3, 8, 23\fR
+.br
+hatc -r 2 15   \fB# Removing 2 jobs having IDs 2, 15\fR
 
 .SH FILES
-.I /var/spool/cron/atjobs
+.I ~/.hatd/
 .br
-.I /var/spool/cron/atspool
+.I /var/lib/hatd/
 .br
-.I /proc/loadavg
+.I /var/run/hatd/
 .br
-.I /var/run/utmp
-.br
-.I /etc/at.allow
-.br
-.I /etc/at.deny
-.SH SEE ALSO
-.BR at.allow (5),
-.BR at.deny (5),
-.BR atd (8),
-.BR cron (1),
-.BR nice (1),
-.BR sh (1),
-.BR umask (2).
+.I /usr/lib/hatd
+
 .SH BUGS
-The correct operation of
-.B batch
-for Linux depends on the presence of a
-.IR proc -
-type directory mounted on
-.IR /proc .
-.PP
-If the file
-.I /var/run/utmp
-is not available or corrupted, or if the user is not logged on at the
-time
-.B at
-is invoked, the mail is sent to the userid found
-in the environment variable
-.BR LOGNAME .
-If that is undefined or empty, the current userid is assumed.
-.PP
-.B At
-and
-.B batch
-as presently implemented are not suitable when users are competing for
-resources.
-If this is the case for your site, you might want to consider another
-batch system, such as
-.BR nqs .
+There could be bugs. Please report bugs to https://github.com/heemayl/hat/
+
 .SH AUTHOR
-At was mostly written by Thomas Koenig, ig25@rz.uni-karlsruhe.de.
+Originally written by Readul Hasan Chayan (Heemayl) <me@heemayl.net>.
+
