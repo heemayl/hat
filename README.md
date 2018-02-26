@@ -21,7 +21,7 @@ Benefits of `hat`:
 
 2. Run the `install.sh` script as superuser
 
-3. Check `hatc --help`
+3. Check `man hatc`
 
 **N.B** The userspace command is `hatc` -- the only thing you should need.
 

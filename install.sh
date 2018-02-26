@@ -45,7 +45,7 @@ msgs=($'\nInstallation Done and daemon started!\n'
       'Now, do the following:'
       $'\t1. Add the user(s) who can schedule jobs to the `hatd` group e.g. for user `foobar`: usermod -a -G hatd foobar'
       $'\t2. For group changes to take effect on any live session of the user, the user needs to logout of that session, and then login Or simply start a new session'
-      $'\t3. Read `hatc --help`'
+      $'\t3. Read `man hatc`'
      )
 
 # Start the daemon
