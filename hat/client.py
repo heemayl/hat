@@ -39,35 +39,36 @@ def create_user_files():
             with open(file_, 'wt') as f:
                 f.write('')
 
+
+# Manual arg help formatter class to make `nargs='+'` show one arg
+class ManualHelpFormatter(argparse.RawTextHelpFormatter):
+    def _format_args(self, action, default_metavar):
+        get_metavar = self._metavar_formatter(action, default_metavar)
+        if action.nargs is None:
+            result = '%s' % get_metavar(1)
+        elif action.nargs == argparse.OPTIONAL:
+            result = '[%s]' % get_metavar(1)
+        elif action.nargs == argparse.ZERO_OR_MORE:
+            result = '[%s [%s ...]]' % get_metavar(2)
+        # Here...
+        elif action.nargs == argparse.ONE_OR_MORE:
+            result = '%s' % get_metavar(1)
+        elif action.nargs == argparse.REMAINDER:
+            result = '...'
+        elif action.nargs == argparse.PARSER:
+            result = '%s ...' % get_metavar(1)
+        else:
+            formats = ['%s' for _ in range(action.nargs)]
+            result = ' '.join(formats) % get_metavar(action.nargs)
+        return result
+
                 
 def parse_arguments():
     '''Parse arguments (for client) and
     return appropriate response back.
     '''
-    # Manual formatter class to make `nargs='+'` show one arg
-    class ManualFormatter(argparse.RawTextHelpFormatter):
-        def _format_args(self, action, default_metavar):
-            get_metavar = self._metavar_formatter(action, default_metavar)
-            if action.nargs is None:
-                result = '%s' % get_metavar(1)
-            elif action.nargs == argparse.OPTIONAL:
-                result = '[%s]' % get_metavar(1)
-            elif action.nargs == argparse.ZERO_OR_MORE:
-                result = '[%s [%s ...]]' % get_metavar(2)
-            # Here...
-            elif action.nargs == argparse.ONE_OR_MORE:
-                result = '%s' % get_metavar(1)
-            elif action.nargs == argparse.REMAINDER:
-                result = '...'
-            elif action.nargs == argparse.PARSER:
-                result = '%s ...' % get_metavar(1)
-            else:
-                formats = ['%s' for _ in range(action.nargs)]
-                result = ' '.join(formats) % get_metavar(action.nargs)
-            return result
-
     parser = argparse.ArgumentParser(prog='hatc', description='HAT client – a client for HAT (Hyper-AT), the one-time scheduler for GNU/Linux.',
-                                     formatter_class=ManualFormatter)
+                                     formatter_class=ManualHelpFormatter)
     parser.add_argument('-l', '--list', dest='joblist',
                         required=False, action='store_true',
                         help='Show the list of queued jobs.\n')
@@ -308,9 +309,10 @@ def main():
             data_seq = ('stop_daemon', True)
             data = SendReceiveData(data_seq)
             data.check_get_send()
+            exit(0)
         if sys.argv[1] in {'-V', '--version'}:
             print_msg(__version__, file=sys.stderr)
-        exit(0)
+            exit(0)
     if not check_daemon_process(DAEMON_PID_FILE):
         print_msg('Daemon (hatd) is not running')
         exit(127)

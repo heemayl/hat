@@ -132,7 +132,7 @@ class Job(metaclass=JobMeta):
             self.date_time_epoch = self.get_run_at_epoch()
             # Saving the job, with the user's EUID as keys, and increasing
             # IDs as subdict keys with command, time, use_shell as values
-            self.job_id = self._get_job_id()
+            self.job_id = self._get_job_id(self.euid)
             
         if not self.date_time_epoch:
             return
@@ -145,12 +145,14 @@ class Job(metaclass=JobMeta):
             }
         })
         
-    def _get_job_id(self):
+    def _get_job_id(self, euid):
         '''Get job ID, to be used as the Job dict key.'''
-        # We'll wrap around at 40000
-        max_id = 40000
-        current_keys = set(i for v in enqueued_jobs.values()
-                           for i in v.keys())
+        # We'll wrap around at 10000 for each user
+        max_id = 10000
+        current_keys = sum([list(v.keys()) for u, v in enqueued_jobs.items()
+                            if int(u) == euid],
+                           []
+                           )
         current_id = max(current_keys) if current_keys else 0
         next_id = current_id + 1
         if next_id <= max_id and next_id not in current_keys:
