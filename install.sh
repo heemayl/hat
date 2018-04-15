@@ -12,15 +12,16 @@ HAT_DB_DIR='/var/lib/hatd'
 mkdir -p "${HAT_DIR}"
 
 # Copy required stuffs to `$HAT_DIR`
-cp -aRt "${HAT_DIR}" ./{hat{,d,-client},env_base.sh}
+cp -aRt "${HAT_DIR}" ./{hat{,d,-{client,parser}},env_base.sh}
 
 # Put Systemd file for the daemon in relevant place.
 # If this gives an error regarding wrong/absent destination directory,
 # please put the file manually in your distro-advised place
 cp system/hat-daemon.service /etc/systemd/system/
 
-# Create symlink for the client
+# Create symlink for the client, and parser
 ln -sf "${HAT_DIR}"/hat-client /usr/bin/hatc
+ln -sf "${HAT_DIR}"/hat-parser /usr/bin/hat-parser
 
 # Create log dir
 mkdir -p /var/log/hatd/
@@ -62,7 +63,7 @@ systemctl enable hat-daemon.service && \
 #        rm /etc/systemd/system/hat-daemon.service && \
 #        systemctl daemon-reload
 # 2. Remove other files and directories:
-#        rm -r /var/lib/hatd/ /var/run/hatd/ /usr/lib/hatd/ /etc/logrotate.d/hat-daemon /usr/share/man/man1/hatc.1.gz
+#        rm -r /var/lib/hatd/ /var/run/hatd/ /usr/lib/hatd/ /etc/logrotate.d/hat-daemon /usr/share/man/man1/hatc.1.gz /usr/bin/hat{c,-parser}
 #
 # N.B: If you want to keep the enqueued jobs, don't remove `/var/lib/hatd/`, precisely `/var/lib/hatd/hatdb.pkl`.
 #

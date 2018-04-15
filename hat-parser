@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Hat log parser. This is just a tiny
+# wrapper around hat-parser.py, passes
+# arguments as-is to the file.
+
+# sourcing env_base
+. /usr/lib/hatd/env_base.sh
+
+PYTHON_BIN="$(command -v python3)"
+[ -z "${PYTHON_BIN}" ] && print_msg "hatd requires python3" >&2 \
+				  && exit 1
+
+CLIENT="${BASE_DIR}/hat/hat-parser.py"
+
+exec "${PYTHON_BIN}" "${CLIENT}" "$@"
+

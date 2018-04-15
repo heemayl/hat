@@ -35,9 +35,9 @@ class FLock:
         self.lockf.close()
         
 
-def print_msg(msg, flush_stream=True, file=sys.stdout):
+def print_msg(msg, end='\n', flush_stream=True, file=sys.stdout):
     '''Wrapper for formatting-printing.'''
-    print('\n{}\n'.format(msg), end='\n', flush=flush_stream, file=file)
+    print('\n{}\n'.format(msg), end=end, flush=flush_stream, file=file)
     return
 
 
