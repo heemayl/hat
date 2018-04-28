@@ -10,6 +10,7 @@ Benefits of `hat`:
 - Option for running a job at the specified time only e.g. if the computer was off at that time, job will not be run
 - User specific jobs, secured approach
 - User based logging, all logs from jobs of a user go in `~/.hatd/logs/`
+- Parsing logs is easier than ever; use the `hat-parser` executable
 - All-in-one i.e. no separate tool based on job or pattern
 - Easy to use
 
