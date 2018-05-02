@@ -106,6 +106,10 @@ def main():
         # expecting .gz extension or as-is
         open_ = gzip.open if file_.endswith('.gz') else open
         with open_(file_, mode='rt') as f:
+            # This keeps track if the line containing
+            # dt has been printed already; need this
+            # to handle multiline logs
+            dt_line_printed = False
             for line in f:
                 line = line.rstrip()
                 if not line:
@@ -113,8 +117,9 @@ def main():
                 # If the line does not start with datetime, it is a
                 # multiline log so printing it and continuing the
                 # loop without the datetime comparison
-                if not dt_pattern.search(line):
-                    print_msg(line, end='')  # log lines already contain blank lines
+                if (not dt_pattern.search(line)):
+                    if dt_line_printed:
+                        print_msg(line, end='')  # log lines already contain blank lines
                     continue
                 (run_time_dt, euid, job_id, scheduled_time_dt,
                  command, return_code, output) = split_format(line)
@@ -122,9 +127,11 @@ def main():
                 compare_dt = scheduled_time_dt if compare_sched else run_time_dt
                 if start_dt <= compare_dt <= end_dt:
                     print_msg(line, end='')
+                    dt_line_printed = True
                 # Break out of this file if we're already passed
                 # the end dt and we're comparing run time
                 else:
+                    dt_line_printed = False
                     if not compare_sched and compare_dt > end_dt:
                         break
                 
