@@ -150,17 +150,21 @@ ID	        Time		        Exact		Shell		Command
 
 ---
 
-Parsing logs (check `hat-parser --help`):
+Parsing logs (see `hat-parser --help`):
 
 ```bash
 
-% hat-parser -f 2018-02-26T02:05:00 -t 2018-02-26T14:18:10
-2018-02-26 02:05:10 : euid>1000 : id>3 : time>2018-02-26 02:05:10 : cmd>whoami : ret>0 :: out>chayan
-2018-02-26 14:18:06 : euid>1000 : id>1 : time>2018-02-26 10:00:00 : cmd>whoami : ret>0 :: out>chayan
+% hat-parser -f 2018-02-26T02:00:00 -t 2018-02-27T18:00:00
+2018-02-26 02:05:10 : euid>1000 : id>1 : time>2018-02-26 02:05:10 : cmd>whoami : ret>0 :: out>foobar
+2018-02-26 17:23:16 : euid>1000 : id>2 : time>2018-02-26 17:23:16 : cmd>true : ret>0 :: out>
+2018-02-27 14:10:25 : euid>1000 : id>3 : time>2018-02-27 14:10:25 : cmd>whoami : ret>0 :: out>foobar
 
+% hat-parser --from 2018-02-26T02:00:00 --to 2018-02-26T23:59:59
+2018-02-26 02:05:10 : euid>1000 : id>1 : time>2018-02-26 02:05:10 : cmd>whoami : ret>0 :: out>foobar
+2018-02-26 17:23:16 : euid>1000 : id>2 : time>2018-02-26 17:23:16 : cmd>true : ret>0 :: out>
 
-% hat-parser -f 2018-02-26T02:05:00 -t 2018-02-26T14:18:00
-2018-02-26 02:05:10 : euid>1000 : id>3 : time>2018-02-26 02:05:10 : cmd>whoami : ret>0 :: out>chayan
+% hat-parser -f 2018-02-26T02:00:00 -t 2018-02-26T23:59:59 --command '^who'
+2018-02-26 02:05:10 : euid>1000 : id>1 : time>2018-02-26 02:05:10 : cmd>whoami : ret>0 :: out>foobar
 
 ```
 
