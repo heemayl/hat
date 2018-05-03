@@ -66,7 +66,8 @@ def search_params_formatter(args_dict):
     the appropriate search parameters as a tuple.
     Sets appropriate defaults if needed.
     '''
-    command_re = args_dict.get('command') or '.'
+    command_re = re.compile(r'{}'.format(
+        args_dict.get('command') or '.'))  # compiled
     logtype = args_dict.get('stderr') or 'stdout'
     compare_sched = args_dict.get('scheduled', False)
     # I think it's safe to take the start of 2018
@@ -117,7 +118,7 @@ def main():
                 # If the line does not start with datetime, it is a
                 # multiline log so printing it and continuing the
                 # loop without the datetime comparison
-                if (not dt_pattern.search(line)):
+                if not dt_pattern.search(line):
                     if dt_line_printed:
                         print_msg(line, end='')  # log lines already contain blank lines
                     continue
@@ -126,8 +127,11 @@ def main():
                 # Comparing dt field
                 compare_dt = scheduled_time_dt if compare_sched else run_time_dt
                 if start_dt <= compare_dt <= end_dt:
-                    print_msg(line, end='')
-                    dt_line_printed = True
+                    if command_re.search(command):
+                        print_msg(line, end='')
+                        dt_line_printed = True
+                    else:
+                        dt_line_printed = False
                 # Break out of this file if we're already passed
                 # the end dt and we're comparing run time
                 else:
